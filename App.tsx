@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import Header from './Header';
 import PhotoEditor from './components/PhotoEditor';
@@ -46,45 +47,52 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 800); // Wait for fade out animation
-    }, 2500);
+      setTimeout(onComplete, 800); 
+    }, 2800);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
-    <div className={`fixed inset-0 z-[1000] bg-gradient-to-br from-blue-600 to-blue-900 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 scale-110 pointer-events-none'}`}>
-      <div className="flex flex-col items-center gap-8 animate-in zoom-in-95 duration-1000">
-        <div className="w-24 h-24 bg-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/20">
-          <i className="fa-solid fa-passport text-white text-5xl"></i>
+    <div className={`fixed inset-0 z-[1000] bg-[#020617] flex flex-col items-center justify-center transition-all duration-1000 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 scale-110 pointer-events-none'}`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-indigo-900/20 opacity-40"></div>
+      
+      <div className="flex flex-col items-center gap-10 relative z-10 animate-in zoom-in-95 duration-1000">
+        <div className="relative">
+          <div className="w-28 h-28 bg-white/5 rounded-[2.5rem] flex items-center justify-center shadow-3xl backdrop-blur-2xl border border-white/10 overflow-hidden group">
+            <div className="absolute inset-0 bg-blue-600/20 group-hover:bg-blue-600/40 transition-colors"></div>
+            <i className="fa-solid fa-passport text-white text-6xl relative z-10 drop-shadow-lg"></i>
+          </div>
+          <div className="absolute -inset-4 border border-blue-500/20 rounded-[3.5rem] animate-pulse"></div>
         </div>
-        <div className="text-center space-y-2">
-          <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter drop-shadow-2xl">
+        
+        <div className="text-center space-y-4">
+          <h1 className="text-8xl font-black text-white tracking-tighter drop-shadow-[0_0_20px_rgba(37,99,235,0.5)]">
             Orgeta
           </h1>
-          <p className="text-blue-100/60 font-black text-xs uppercase tracking-[0.5em] animate-pulse">
-            AI Passport Studio
-          </p>
+          <div className="flex items-center justify-center gap-3">
+            <div className="h-px w-8 bg-blue-500/40"></div>
+            <p className="text-blue-400 font-black text-[10px] uppercase tracking-[0.6em] animate-pulse">
+              AI PASSPORT STUDIO
+            </p>
+            <div className="h-px w-8 bg-blue-500/40"></div>
+          </div>
         </div>
       </div>
       
-      <div className="absolute bottom-12 text-center space-y-4">
-        <div className="px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
-          <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest lowercase">
-            {window.location.origin.replace(/^https?:\/\//, '')}
-          </p>
+      <div className="absolute bottom-16 text-center space-y-6">
+        <div className="w-64 h-1.5 bg-white/5 rounded-full mx-auto overflow-hidden border border-white/10">
+          <div className="h-full bg-gradient-to-r from-blue-600 to-indigo-400 w-full animate-progress-premium origin-left"></div>
         </div>
-        <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
-          <div className="h-full bg-white w-full animate-progress-fast origin-left"></div>
-        </div>
+        <p className="text-white/20 text-[9px] font-bold uppercase tracking-[0.4em]">Initializing Neutral Engine</p>
       </div>
 
       <style>{`
-        @keyframes progress-fast {
+        @keyframes progress-premium {
           0% { transform: scaleX(0); }
           100% { transform: scaleX(1); }
         }
-        .animate-progress-fast {
-          animation: progress-fast 2.5s linear forwards;
+        .animate-progress-premium {
+          animation: progress-premium 2.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
         }
       `}</style>
     </div>
@@ -111,8 +119,6 @@ const AppContent: React.FC = () => {
   const [downloadQuality, setDownloadQuality] = useState<'Standard' | 'High' | 'Maximum'>('Maximum');
   const [isRendering, setIsRendering] = useState(false);
   
-  const settingsRef = useRef<HTMLDivElement>(null);
-
   // Auth initialization
   useEffect(() => {
     const saved = localStorage.getItem('bp_user');
@@ -133,7 +139,6 @@ const AppContent: React.FC = () => {
     checkAndSendUserReport();
   }, []);
 
-  // Check if subscription is valid
   const isSubscriptionValid = (u: User | null): boolean => {
     if (!u || !u.subscription) return false;
     const now = new Date();
@@ -166,6 +171,27 @@ const AppContent: React.FC = () => {
   const handleUpdateUser = (updatedUser: User) => {
     setUser(updatedUser);
     localStorage.setItem('bp_user', JSON.stringify(updatedUser));
+  };
+
+  // Fix: Added missing handleVerificationSuccess function to update user subscription state
+  const handleVerificationSuccess = (subscription: Subscription) => {
+    setIsUnlocked(true);
+    if (user) {
+      const updatedUser: User = {
+        ...user,
+        subscription: subscription
+      };
+      handleUpdateUser(updatedUser);
+
+      // Also ensure the user ledger is updated with the new subscription
+      try {
+        const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
+        const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
+        localStorage.setItem('bp_user_ledger', JSON.stringify(updatedLedger));
+      } catch (e) {
+        console.error("Ledger sync error during verification", e);
+      }
+    }
   };
 
   const resetToHome = () => {
@@ -251,23 +277,20 @@ const AppContent: React.FC = () => {
 
   const handleDownload = async (format: 'PNG' | 'PDF') => {
     if (hasDownloaded) return;
-    
-    // Final check for validity
     if (!isSubscriptionValid(user)) {
       alert("Your plan has expired or no uses are left. Please activate a new plan.");
       return;
     }
 
     setIsRendering(true);
-    
     try {
       const canvases = await generateGridCanvases(downloadQuality);
-      const fileName = `Orgeta_${currentPhotoCount}Photos_${config.size.replace(/\s+/g, '_')}`;
+      const fileName = `Orgeta_Export_${new Date().getTime()}`;
       if (format === 'PNG') {
         canvases.forEach((canvas, index) => {
           const link = document.createElement('a');
-          link.download = canvases.length > 1 ? `${fileName}_Page${index + 1}.png` : `${fileName}.png`;
-          link.href = canvas.toDataURL('image/png', 1.0);
+          link.download = canvases.length > 1 ? `${fileName}_P${index + 1}.png` : `${fileName}.png`;
+          link.href = canvas.toDataURL('image/png');
           link.click();
         });
       } else {
@@ -279,13 +302,12 @@ const AppContent: React.FC = () => {
         });
         canvases.forEach((canvas, index) => {
           if (index > 0) pdf.addPage([paper.width, paper.height], paper.width > paper.height ? 'l' : 'p');
-          const imgData = canvas.toDataURL('image/jpeg', 1.0);
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
           pdf.addImage(imgData, 'JPEG', 0, 0, paper.width, paper.height);
         });
         pdf.save(`${fileName}.pdf`);
       }
       
-      // Update uses
       if (user && user.subscription) {
         const updatedUser = {
           ...user,
@@ -295,75 +317,59 @@ const AppContent: React.FC = () => {
           }
         };
         handleUpdateUser(updatedUser);
-        
-        // Update user ledger
-        const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
-        const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
-        localStorage.setItem('bp_user_ledger', JSON.stringify(updatedLedger));
       }
-      
       setHasDownloaded(true);
     } catch (err) {
       console.error(err);
-      alert("Export failed. Please try a lower quality.");
+      alert("Export failed.");
     } finally {
       setIsRendering(false);
     }
   };
 
-  const handleVerificationSuccess = (sub: Subscription) => {
-    if (user) {
-      const updatedUser = { ...user, subscription: sub };
-      handleUpdateUser(updatedUser);
-      
-      // Update ledger
-      const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
-      const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
-      localStorage.setItem('bp_user_ledger', JSON.stringify(updatedLedger));
-      
-      setIsUnlocked(true);
-    }
-  };
-
-  if (isSplash) {
-    return <SplashScreen onComplete={() => setIsSplash(false)} />;
-  }
+  if (isSplash) return <SplashScreen onComplete={() => setIsSplash(false)} />;
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col bg-[#020617] text-white">
+      <div className="min-h-screen flex flex-col bg-[#000000] text-white overflow-hidden">
         <Header onHome={() => {}} user={null} onLogout={() => {}} onUpdateUser={handleUpdateUser} onSignUp={() => setShowSignUp(true)} onLogin={() => setShowLogin(true)} />
         {showSignUp && <SignUpModal onClose={() => setShowSignUp(false)} onSuccess={handleAuthSuccess} onSwitchToLogin={() => { setShowSignUp(false); setShowLogin(true); }} />}
         {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleAuthSuccess} onSwitchToSignUp={() => { setShowLogin(false); setShowSignUp(true); }} />}
         
-        <main className="flex-grow flex flex-col items-center justify-center p-4 relative overflow-hidden">
-          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
-          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse delay-700"></div>
+        <main className="flex-grow flex flex-col items-center justify-center p-6 relative">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full max-w-7xl">
+            <div className="absolute top-0 left-10 w-96 h-96 bg-blue-600/10 rounded-full blur-[140px] animate-pulse"></div>
+            <div className="absolute bottom-10 right-10 w-80 h-80 bg-indigo-600/10 rounded-full blur-[140px] animate-pulse delay-1000"></div>
+          </div>
 
-          <div className="relative z-10 text-center space-y-12 max-w-4xl animate-in zoom-in-95 duration-700">
-            <div className="space-y-6">
-               <div className="text-blue-600 font-black text-sm uppercase tracking-[0.3em] animate-pulse mb-2">
-                 WELCOME TO STUDIO
+          <div className="relative z-10 text-center space-y-16 max-w-5xl animate-fade-in">
+            <div className="space-y-8">
+               <div className="inline-flex items-center gap-3 px-8 py-3 rounded-full bg-blue-600/10 border border-blue-500/20 text-blue-400 text-[11px] font-black uppercase tracking-[0.5em]">
+                 <i className="fa-solid fa-sparkles"></i> AI-POWERED DOCUMENT STUDIO
                </div>
-               <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
-                 <i className="fa-solid fa-shield-check"></i> AI-Verified Studio
-               </div>
-               <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter mb-2">Orgeta</div>
-               <h1 className="text-6xl md:text-9xl font-black bg-clip-text text-transparent bg-gradient-to-b from-blue-300 via-blue-500 to-blue-700 leading-tight tracking-tighter">
-                 <span className="text-4xl md:text-6xl">{t('hero_title_1')} {t('hero_title_2')}</span>
+               <h1 className="text-7xl md:text-[10rem] font-black tracking-tighter leading-[0.85] bg-clip-text text-transparent bg-gradient-to-b from-white via-blue-100 to-blue-400">
+                 {t('hero_title_1')}<br/>{t('hero_title_2')}
                </h1>
-               <p className="text-xl md:text-2xl text-blue-200/50 max-w-2xl mx-auto leading-relaxed">
-                 Join 50,000+ users creating official-standard passport photos in seconds with Orgeta. Sign up now to unlock the studio.
+               <p className="text-xl md:text-2xl text-blue-200/40 max-w-3xl mx-auto leading-relaxed font-medium">
+                 {t('hero_desc')}
                </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <button onClick={() => setShowSignUp(true)} className="w-full sm:w-auto px-16 py-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-2xl font-black shadow-3xl shadow-blue-600/40 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4">
-                <i className="fa-solid fa-user-plus"></i> {t('sign_up')} to Start
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-8">
+              <button onClick={() => setShowSignUp(true)} className="w-full sm:w-auto px-16 py-8 bg-blue-600 hover:bg-blue-500 text-white rounded-[2rem] text-2xl font-black shadow-[0_20px_60px_-15px_rgba(37,99,235,0.5)] transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4 group">
+                {t('start_creating')}
+                <i className="fa-solid fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
               </button>
-              <button onClick={() => setShowLogin(true)} className="w-full sm:w-auto px-12 py-8 bg-blue-900/10 hover:bg-blue-900/20 text-blue-400 rounded-full text-xl font-bold border border-blue-500/20 transition-all">
+              <button onClick={() => setShowLogin(true)} className="w-full sm:w-auto px-12 py-8 bg-white/5 hover:bg-white/10 text-white/80 rounded-[2rem] text-xl font-bold border border-white/10 backdrop-blur-md transition-all">
                 {t('login')}
               </button>
+            </div>
+            
+            <div className="pt-20 grid grid-cols-2 md:grid-cols-4 gap-8 opacity-30">
+               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-passport text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">Global Sizes</span></div>
+               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-shirt text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">AI Outfits</span></div>
+               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-wand-magic-sparkles text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">HD Enhance</span></div>
+               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-file-pdf text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">Print Ready</span></div>
             </div>
           </div>
         </main>
@@ -374,80 +380,77 @@ const AppContent: React.FC = () => {
   const userHasActiveSub = isSubscriptionValid(user);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#020617]">
+    <div className="min-h-screen flex flex-col bg-[#000000]">
       <Header onHome={resetToHome} user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />
       
-      <main className="flex-grow container mx-auto px-4 py-8">
+      <main className="flex-grow container mx-auto px-6 py-12">
         {step === 'home' && (
-          <div className="space-y-16 py-12 animate-in fade-in duration-700">
-            <div className="text-center space-y-6">
-              <div className="text-blue-600 font-black text-sm uppercase tracking-[0.3em] animate-pulse">
-                WELCOME TO STUDIO
+          <div className="space-y-20 animate-fade-in">
+            <div className="text-center space-y-8">
+              <div className="inline-flex items-center gap-2 text-blue-500 font-black text-[10px] uppercase tracking-[0.8em] animate-pulse">
+                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                LIVE STUDIO ENVIRONMENT
               </div>
-              <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter">Orgeta</div>
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-                <span className="text-blue-300">{t('hero_title_1')}</span> <span className="text-blue-500">{t('hero_title_2')}</span>
+              <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-white">
+                Studio <span className="text-blue-600">Workspace</span>
               </h1>
-              <p className="text-blue-300/60 text-lg max-w-2xl mx-auto font-medium">
-                {t('hero_desc')}
-              </p>
               {userHasActiveSub && (
-                <div className="bg-blue-600/10 border border-blue-600/20 px-6 py-4 rounded-3xl inline-flex items-center gap-3">
-                  <i className="fa-solid fa-circle-check text-blue-400"></i>
+                <div className="bg-blue-600/10 border border-blue-500/20 px-8 py-4 rounded-[2rem] inline-flex items-center gap-4 backdrop-blur-md">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 animate-ping"></div>
                   <span className="text-sm font-black text-blue-400 uppercase tracking-widest">
-                    Active Plan: {user.subscription?.remainingUses} Uses Left until {new Date(user.subscription?.expiresAt || '').toLocaleDateString()}
+                    Subscription active • {user.subscription?.remainingUses} Uses remaining
                   </span>
                 </div>
               )}
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Standard Grids Blue Card */}
-              <div className="bg-blue-950/40 backdrop-blur-xl rounded-[3rem] p-10 border border-blue-500/30 shadow-2xl space-y-8">
-                <div>
-                  <h2 className="text-3xl font-black text-blue-400 mb-2">{t('standard_grids')}</h2>
-                  <p className="text-blue-500/60 font-black uppercase text-[10px] tracking-widest">{t('standard_desc')}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {activePricing.map((p) => (
-                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-900/30 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-600/20 transition-all text-left relative overflow-hidden active:scale-95">
-                      <div className="relative z-10 flex flex-col h-full justify-between">
-                        <div>
-                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">{p.label}</p>
-                          <p className="text-3xl font-black text-blue-50">{currencySymbol}{p.amount}</p>
-                          <p className="text-xs font-bold text-blue-400/60 mt-1">{p.photos} Photos</p>
+            <div className="grid lg:grid-cols-2 gap-10">
+              <div className="glass-card rounded-[3.5rem] p-12 border-blue-500/20 relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><i className="fa-solid fa-layer-group text-9xl"></i></div>
+                <div className="relative z-10 space-y-10">
+                  <div>
+                    <h2 className="text-4xl font-black text-white mb-3">{t('standard_grids')}</h2>
+                    <p className="text-blue-500/60 font-black uppercase text-[11px] tracking-[0.3em]">{t('standard_desc')}</p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    {activePricing.map((p) => (
+                      <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-8 rounded-[2.5rem] bg-white/5 border border-white/10 hover:border-blue-500/50 hover:bg-blue-600/10 transition-all text-left relative active:scale-95 btn-glow">
+                        <div className="space-y-4">
+                          <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">{p.label}</p>
+                          <p className="text-4xl font-black text-white">{currencySymbol}{p.amount}</p>
+                          <div className="h-px w-full bg-white/10"></div>
+                          <p className="text-xs font-bold text-white/40">{p.photos} Photos per sheet</p>
                         </div>
-                        <p className="mt-4 text-[9px] font-black text-blue-400/30 leading-relaxed uppercase tracking-wider">{p.description}</p>
-                      </div>
-                      <i className="fa-solid fa-bolt-lightning absolute bottom-4 right-4 text-2xl text-blue-500/5 group-hover:text-blue-500/20 transition-colors"></i>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Bulk Savings Blue Card */}
-              <div className="bg-blue-950/40 backdrop-blur-xl rounded-[3rem] p-10 border border-blue-500/30 shadow-2xl space-y-8">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h2 className="text-3xl font-black text-blue-400 mb-2">{t('bulk_savings')}</h2>
-                    <p className="text-blue-500/60 font-black uppercase text-[10px] tracking-widest">{t('bulk_desc')}</p>
+              <div className="glass-card rounded-[3.5rem] p-12 border-indigo-500/20 relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity"><i className="fa-solid fa-crown text-9xl text-indigo-500"></i></div>
+                <div className="relative z-10 space-y-10">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-4xl font-black text-white mb-3">{t('bulk_savings')}</h2>
+                      <p className="text-indigo-400/60 font-black uppercase text-[11px] tracking-[0.3em]">{t('bulk_desc')}</p>
+                    </div>
                   </div>
-                  <span className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg border border-blue-400/30">{t('best_choice')}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {activeBulk.map((p) => (
-                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-900/30 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-600/20 transition-all text-left relative overflow-hidden active:scale-95">
-                      <div className="relative z-10 flex flex-col h-full justify-between">
-                        <div>
-                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">{p.label}</p>
-                          <p className="text-3xl font-black text-blue-50">{currencySymbol}{p.amount}</p>
-                          <p className="text-xs font-bold text-blue-400/60 mt-1">{p.uses} Uses • {p.validity}</p>
+                  <div className="grid sm:grid-cols-2 gap-5">
+                    {activeBulk.map((p) => (
+                      <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-8 rounded-[2.5rem] bg-indigo-600/5 border border-indigo-500/10 hover:border-indigo-500/50 hover:bg-indigo-600/10 transition-all text-left relative active:scale-95 btn-glow">
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center">
+                            <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{p.label}</p>
+                            {p.isGold && <i className="fa-solid fa-star text-amber-500 text-[10px]"></i>}
+                          </div>
+                          <p className="text-4xl font-black text-white">{currencySymbol}{p.amount}</p>
+                          <div className="h-px w-full bg-indigo-500/10"></div>
+                          <p className="text-xs font-bold text-indigo-400/40">{p.uses} Uses • {p.validity}</p>
                         </div>
-                        <p className="mt-4 text-[9px] font-black text-blue-400/30 leading-relaxed uppercase tracking-wider">{p.description}</p>
-                      </div>
-                      <i className={`fa-solid ${p.icon} absolute bottom-4 right-4 text-2xl text-blue-500/5 group-hover:text-blue-500/20 transition-colors`}></i>
-                    </button>
-                  ))}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -477,7 +480,7 @@ const AppContent: React.FC = () => {
         )}
 
         {step === 'payment' && (
-          <div className="max-w-2xl mx-auto space-y-8">
+          <div className="max-w-4xl mx-auto space-y-12">
             <PaymentVerification 
               amount={selectedAmount} 
               isUnlocked={isUnlocked || userHasActiveSub} 
@@ -487,85 +490,69 @@ const AppContent: React.FC = () => {
             />
 
             {(isUnlocked || userHasActiveSub) && (
-              <div className="bg-blue-950/40 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] border border-blue-500/30 shadow-2xl space-y-12 animate-in slide-in-from-bottom-8 duration-700">
-                <div className="text-center space-y-3">
-                  <h3 className="text-3xl font-black text-blue-300 uppercase tracking-tighter">{t('select_quality')}</h3>
-                  <p className="text-blue-500/60 text-[10px] font-black uppercase tracking-[0.4em]">{t('quality_desc')}</p>
+              <div className="glass-card p-12 md:p-16 rounded-[4rem] space-y-16 animate-fade-in shadow-[0_0_100px_rgba(37,99,235,0.1)]">
+                <div className="text-center space-y-4">
+                  <h3 className="text-5xl font-black text-white tracking-tighter">{t('select_quality')}</h3>
+                  <p className="text-blue-500/60 text-[12px] font-black uppercase tracking-[0.5em]">{t('quality_desc')}</p>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {(Object.entries(QUALITY_BENEFITS) as [keyof typeof QUALITY_BENEFITS, typeof QUALITY_BENEFITS.Standard][]).map(([q, info]) => (
                     <button 
                       key={q} 
                       onClick={() => setDownloadQuality(q)} 
-                      className={`group relative p-6 rounded-3xl border transition-all text-left flex flex-col gap-4 ${
+                      className={`group relative p-8 rounded-[2.5rem] border-2 transition-all text-left flex flex-col gap-6 ${
                         downloadQuality === q 
-                        ? 'bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-600/20' 
-                        : 'bg-blue-900/20 border-blue-500/10 text-blue-400 hover:bg-blue-500/5'
+                        ? 'bg-blue-600 border-blue-400 text-white shadow-3xl shadow-blue-600/30' 
+                        : 'bg-white/5 border-white/5 text-white/40 hover:bg-white/10'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-400'}`}>
-                          <i className={`fa-solid ${info.icon} text-lg`}></i>
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-white/5 text-white/40'}`}>
+                          <i className={`fa-solid ${info.icon} text-2xl`}></i>
                         </div>
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-md ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-400'}`}>
+                        <span className={`text-[11px] font-black px-3 py-1.5 rounded-lg border ${downloadQuality === q ? 'bg-white/20 border-white/20 text-white' : 'bg-white/5 border-white/10 text-white/20'}`}>
                           {info.dpi} DPI
                         </span>
                       </div>
                       
-                      <div>
-                        <p className={`text-sm font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white' : 'text-blue-200'}`}>{q}</p>
-                        <p className={`text-[10px] font-bold mt-1 leading-tight ${downloadQuality === q ? 'text-white/70' : 'text-blue-500/60'}`}>{info.desc}</p>
-                      </div>
-
-                      <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white/90' : 'text-blue-400/70'}`}>
-                        <i className="fa-solid fa-circle-check"></i>
-                        {info.use}
+                      <div className="space-y-2">
+                        <p className={`text-xl font-black uppercase tracking-tighter ${downloadQuality === q ? 'text-white' : 'text-white/60'}`}>{q}</p>
+                        <p className={`text-[11px] font-bold leading-relaxed ${downloadQuality === q ? 'text-white/70' : 'text-white/20'}`}>{info.desc}</p>
                       </div>
                     </button>
                   ))}
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col md:flex-row gap-6">
                   <button 
                     disabled={isRendering || hasDownloaded}
                     onClick={() => handleDownload('PNG')}
-                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
+                    className={`flex-1 py-10 rounded-[2.5rem] font-black text-2xl flex flex-col items-center gap-3 transition-all group ${hasDownloaded ? 'bg-white/5 text-white/10 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
                   >
-                    <i className="fa-solid fa-file-image text-2xl group-hover:rotate-12 transition-transform"></i>
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_png')}</span>
-                      <span className="text-[9px] font-bold opacity-60">High-Resolution Image</span>
+                    <i className="fa-solid fa-file-image text-3xl group-hover:scale-110 transition-transform"></i>
+                    <div className="text-center">
+                      <span className="text-sm uppercase tracking-widest">{hasDownloaded ? 'Exported' : t('download_png')}</span>
                     </div>
                   </button>
                   
                   <button 
                     disabled={isRendering || hasDownloaded}
                     onClick={() => handleDownload('PDF')}
-                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed opacity-50' : 'bg-blue-700 hover:bg-blue-600 text-white shadow-3xl shadow-blue-700/30 active:scale-95'}`}
+                    className={`flex-1 py-10 rounded-[2.5rem] font-black text-2xl flex flex-col items-center gap-3 transition-all group ${hasDownloaded ? 'bg-white/5 text-white/10 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-3xl shadow-indigo-600/30 active:scale-95'}`}
                   >
-                    <i className="fa-solid fa-file-pdf text-2xl group-hover:scale-110 transition-transform"></i>
-                    <div className="flex flex-col items-center">
-                      <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_pdf')}</span>
-                      <span className="text-[9px] font-bold opacity-60">Best for Printing</span>
+                    <i className="fa-solid fa-file-pdf text-3xl group-hover:scale-110 transition-transform"></i>
+                    <div className="text-center">
+                      <span className="text-sm uppercase tracking-widest">{hasDownloaded ? 'Exported' : t('download_pdf')}</span>
                     </div>
                   </button>
                 </div>
 
-                {hasDownloaded && (
-                  <div className="p-6 bg-blue-600/10 border border-blue-600/20 rounded-3xl text-center animate-in zoom-in-95">
-                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
-                      <i className="fa-solid fa-circle-info mr-2"></i>
-                      Only one format is allowed per use. Return home to create a new one.
-                    </p>
-                  </div>
-                )}
-
-                <div className="pt-8 border-t border-blue-500/10 flex flex-col items-center gap-6">
-                   <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em]">Help & Support</p>
-                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-4 px-8 py-4 bg-blue-900/20 hover:bg-blue-900/40 rounded-full transition-all border border-blue-500/20 group">
-                    <i className="fa-brands fa-whatsapp text-blue-400 text-xl group-hover:scale-125 transition-transform"></i>
-                    <span className="text-xs font-black text-blue-300 uppercase tracking-widest">Chat with Assistant</span>
+                <div className="flex flex-col items-center gap-8 pt-10 border-t border-white/5">
+                   <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.8em]">TECHNICAL SUPPORT</p>
+                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-5 px-10 py-5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 group">
+                    <i className="fa-brands fa-whatsapp text-emerald-500 text-2xl group-hover:scale-125 transition-transform"></i>
+                    <span className="text-sm font-black text-white/70 uppercase tracking-widest">Chat with Assistant</span>
                    </a>
                 </div>
               </div>
@@ -574,30 +561,37 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-12 border-t border-blue-900/40 bg-[#020617]">
-        <div className="container mx-auto px-4 text-center">
-          <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em] mb-4">
-            {t('footer_copy')}
+      <footer className="py-20 border-t border-white/5 bg-[#000000]">
+        <div className="container mx-auto px-6 text-center space-y-10">
+          <div className="flex items-center justify-center gap-4">
+             <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
+               <i className="fa-solid fa-passport text-white/20 text-xl"></i>
+             </div>
+             <span className="text-2xl font-black tracking-tighter text-white/20">Orgeta</span>
+          </div>
+          <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">
+            &copy; 2025 ORGETA STUDIO • POWERED BY GEMINI AI • MADE FOR THE WORLD
           </p>
-          <div className="flex justify-center gap-8">
-            <i className="fa-brands fa-cc-visa text-xl text-blue-500/20"></i>
-            <i className="fa-brands fa-cc-mastercard text-xl text-blue-500/20"></i>
-            <i className="fa-brands fa-google-pay text-2xl text-blue-500/20"></i>
+          <div className="flex justify-center gap-10 opacity-10">
+            <i className="fa-brands fa-cc-visa text-3xl"></i>
+            <i className="fa-brands fa-cc-mastercard text-3xl"></i>
+            <i className="fa-brands fa-google-pay text-4xl"></i>
+            <i className="fa-brands fa-apple-pay text-4xl"></i>
           </div>
         </div>
       </footer>
 
       {isRendering && (
-        <div className="fixed inset-0 z-[300] bg-blue-950/90 backdrop-blur-xl flex flex-col items-center justify-center">
-          <div className="relative">
-            <div className="w-24 h-24 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+        <div className="fixed inset-0 z-[1001] bg-[#000000]/95 backdrop-blur-2xl flex flex-col items-center justify-center">
+          <div className="relative mb-10">
+            <div className="w-32 h-32 border-4 border-blue-600/10 border-t-blue-500 rounded-full animate-spin"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <i className="fa-solid fa-passport text-blue-500 text-xl animate-pulse"></i>
+              <i className="fa-solid fa-file-export text-blue-500 text-3xl animate-pulse"></i>
             </div>
           </div>
-          <div className="mt-8 text-center space-y-2">
-            <p className="text-2xl font-black text-blue-100 uppercase tracking-tighter">{t('generating_hd')}</p>
-            <p className="text-blue-500 text-xs font-bold tracking-widest">{t('encoding_data')}</p>
+          <div className="text-center space-y-4">
+            <p className="text-4xl font-black text-white uppercase tracking-tighter">{t('generating_hd')}</p>
+            <p className="text-blue-500 text-[10px] font-black tracking-[0.6em] animate-pulse">{t('encoding_data')}</p>
           </div>
         </div>
       )}

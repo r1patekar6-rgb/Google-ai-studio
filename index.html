@@ -21,8 +21,7 @@
   <script>
     /**
      * Initialize process.env for the browser environment.
-     * The 'APP_API_KEY_VALUE_PLACEHOLDER' string is replaced during the Netlify build process
-     * by the sed command defined in netlify.toml.
+     * The placeholder is replaced during the Netlify build process.
      */
     window.process = {
       env: {
@@ -44,15 +43,14 @@
     :root {
       --bg-color: #020617;
       --text-color: #f1f5f9;
-      --glass-bg: rgba(30, 58, 138, 0.15);
-      --glass-border: rgba(59, 130, 246, 0.2);
+      --glass-bg: rgba(15, 23, 42, 0.4);
+      --glass-border: rgba(59, 130, 246, 0.15);
+      --primary-glow: rgba(37, 99, 235, 0.15);
     }
 
     .dark {
       --bg-color: #000000;
       --text-color: #f8fafc;
-      --glass-bg: rgba(15, 23, 42, 0.4);
-      --glass-border: rgba(59, 130, 246, 0.15);
     }
 
     body {
@@ -60,12 +58,17 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
+      background-image: 
+        radial-gradient(circle at 0% 0%, var(--primary-glow) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, var(--primary-glow) 0%, transparent 50%);
+      background-attachment: fixed;
     }
 
     .glass-card {
       background: var(--glass-bg);
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
     }
 
     .no-scrollbar::-webkit-scrollbar {
@@ -76,18 +79,35 @@
       scrollbar-width: none;
     }
 
-    /* Custom high-contrast focus states for accessibility */
+    /* Custom high-contrast focus states */
     input:focus, button:focus {
       outline: 2px solid #3b82f6;
       outline-offset: 2px;
     }
     
     @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .animate-fade-in {
-      animation: fadeIn 0.5s ease-out forwards;
+      animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .btn-glow:hover {
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .premium-border {
+      position: relative;
+    }
+    .premium-border::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: inherit;
+      background: linear-gradient(45deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+      z-index: -1;
+      opacity: 0.3;
     }
   </style>
 <script type="importmap">
@@ -99,15 +119,14 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.3.0",
     "react-easy-crop": "https://esm.sh/react-easy-crop@^5.2.0",
     "jspdf": "https://esm.sh/jspdf@^2.5.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
   }
 }
 </script>
 </head>
 <body class="overflow-x-hidden">
   <div id="root"></div>
-  <!-- Using Babel to transpile the TSX entry point directly in the browser -->
   <script type="text/babel" data-presets="react,typescript" data-type="module" src="index.tsx"></script>
 </body>
 </html>

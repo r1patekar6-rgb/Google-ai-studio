@@ -1,3 +1,4 @@
+
 import { GoogleGenAI, Type } from "@google/genai";
 import { VerificationStatus, VerificationResult } from '../types';
 import { REPORT_EMAIL, INR_PRICING, USD_PRICING, INR_BULK_PLANS, USD_BULK_PLANS, RECIPIENT_NAME, UPI_ID } from '../constants';
@@ -58,19 +59,7 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
       4. Date Validity: The transaction date shown MUST be today (${formattedDate}) or within the last 24 hours. Transactions older than this are EXPIRED and must be REJECTED.
       5. Transaction ID Verification: The UTR, Ref No, or TxID on the image MUST match: "${userProvidedTxId}".
 
-      Respond ONLY with a JSON object:
-      {
-        "status": "SUCCESS" | "FAILED",
-        "message": "Reason for success or specific failure reason",
-        "amountDetected": number | null,
-        "currency": "INR" | "USD" | null,
-        "recipientMatched": boolean,
-        "upiMatched": boolean,
-        "isDateCurrent": boolean,
-        "amountIsPremium": boolean
-      }
-      
-      Final Status is SUCCESS ONLY if all flags are true.
+      Respond ONLY with a JSON object.
     `;
 
     const response = await ai.models.generateContent({
@@ -82,7 +71,21 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
         ]
       },
       config: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            status: { type: Type.STRING },
+            message: { type: Type.STRING },
+            amountDetected: { type: Type.NUMBER },
+            currency: { type: Type.STRING },
+            recipientMatched: { type: Type.BOOLEAN },
+            upiMatched: { type: Type.BOOLEAN },
+            isDateCurrent: { type: Type.BOOLEAN },
+            amountIsPremium: { type: Type.BOOLEAN }
+          },
+          required: ["status", "message", "amountDetected", "recipientMatched", "upiMatched", "isDateCurrent", "amountIsPremium"]
+        }
       }
     });
 
@@ -114,7 +117,7 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
 };
 
 /**
- * AI Image Editing Service
+ * AI Image Editing Service using gemini-2.5-flash-image
  */
 export const editUserPhoto = async (
   base64Image: string, 
@@ -128,30 +131,23 @@ export const editUserPhoto = async (
 
   let prompt = "";
   if (action === 'enhance') {
-    prompt = `Professional portrait enhancement:
+    prompt = `Professional portrait enhancement for official document:
     1. Adjust Sharpness to ${settings?.sharpness || 50}%, Brightness to ${settings?.brightness || 50}%, and Contrast to ${settings?.contrast || 50}%.
     2. Reduce digital noise and artifacts.
-    3. Subtly improve skin texture while preserving natural pores and details.
-    4. Sharpen the eyes and facial features for a crisp, professional look.
-    5. Maintain realistic color balance and lighting.`;
+    3. Preserve natural skin details.
+    4. Sharpen eyes and facial features.`;
   } else if (action === 'remove_bg') {
-    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure, even white (#FFFFFF) background. Ensure sharp and clean edges around the hair and shoulders.";
+    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure white (#FFFFFF) background suitable for a passport photo.";
   } else if (action === 'apply_clothes') {
-    prompt = `Elite professional digital tailoring for official documents:
-    1. Replace the person's current outfit with a high-resolution, perfectly-fitted ${itemDescription}. 
-    2. The new clothing must align seamlessly with the person's original neck and shoulders, maintaining their posture exactly.
-    3. For items including Suits, Blazers, Shirts, Ties, or Bow Ties: Ensure the knot is centered, the collar fits snugly around the neck, and the fabric textures are ultra-sharp.
-    4. Match the exact lighting angle, intensity, and color temperature from the person's face onto the new ${itemDescription} to achieve 100% photorealistic studio quality.
-    5. Ensure the transition between the skin and the collar is soft and natural with realistic contact shadows.
-    6. Preserve the person's original head, hair, and facial features with zero distortion. Fine hair details must be preserved where they overlap with the new clothing.
-    7. The final result must appear as an authentic, single-exposure studio photograph taken for a professional passport or ID.`;
+    prompt = `Elite professional digital tailoring:
+    1. Replace the person's outfit with ${itemDescription}. 
+    2. Ensure perfect alignment with neck and shoulders.
+    3. Match lighting and shadows for 100% realism.`;
   } else if (action === 'change_bg_color') {
     prompt = `Professional studio background modification:
-    1. Remove the existing background completely.
-    2. Replace it with a flat, uniform, solid ${itemDescription} color.
-    3. Perform ultra-precise edge detection around the person, especially preserving fine hair details and shoulder contours.
-    4. Subtly adjust the ambient "rim lighting" or reflections on the person's edges to naturally match the new ${itemDescription} background color.
-    5. There must be no color bleeding or artifacts from the previous background.`;
+    1. Remove existing background.
+    2. Replace with solid ${itemDescription} color.
+    3. Precise edge detection around hair.`;
   }
 
   const response = await ai.models.generateContent({
@@ -179,12 +175,13 @@ export const editUserPhoto = async (
  */
 export const sendPaymentNotification = async (data: any) => {
   console.log(`[Audit] Syncing record to ${REPORT_EMAIL}...`, data);
+  // In a real app, this would be an API call to a backend or email service.
   await new Promise(resolve => setTimeout(resolve, 1000));
   return true;
 };
 
 /**
- * Logs a successful transaction to the local ledger for monthly reporting.
+ * Logs a successful transaction to the local ledger.
  */
 export const logTransactionToLedger = (amount: number, txId: string, currency: string) => {
   try {
@@ -218,7 +215,7 @@ export const logUserToLedger = (userData: any) => {
 };
 
 /**
- * Checks if a monthly revenue report is due and sends it.
+ * Checks if reports are due and sends them.
  */
 export const checkAndSendMonthlyReport = async () => {
   const now = new Date();
@@ -257,9 +254,6 @@ export const checkAndSendMonthlyReport = async () => {
   }
 };
 
-/**
- * Checks if a monthly user registration report is due and sends it.
- */
 export const checkAndSendUserReport = async () => {
   const now = new Date();
   const currentMonthYear = `${now.getFullYear()}-${now.getMonth() + 1}`;
@@ -274,12 +268,6 @@ export const checkAndSendUserReport = async () => {
       reportRecipient: REPORT_EMAIL,
       reportMonth: currentMonthYear,
       totalRegisteredUsers: userLedger.length,
-      completeUserRegistry: userLedger.map((u: any) => ({
-        fullName: u.name,
-        phoneNumber: u.phone,
-        emailId: u.email,
-        registrationDate: u.signupDate
-      })),
       generatedAt: new Date().toISOString()
     };
 
