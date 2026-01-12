@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import Cropper, { Point, Area } from 'react-easy-crop';
 import { PhotoSize, PaperLayout, PhotoConfig } from '../types';
@@ -39,27 +38,19 @@ const CLOTHING_CATEGORIES = {
     "Burgundy Formal Shirt", "Forest Green Dress Shirt", "Midnight Black Formal Shirt", 
     "Cream Silk Executive Shirt", "Sky Blue Micro-check Shirt", "Light Grey Textured Shirt"
   ],
-  Ties: [
-    "Solid Power Red Tie", "Sapphire Blue Tie", "Formal Black Tie", "Elegant Silver Tie", 
-    "Golden Silk Tie", "Emerald Green Tie", "Navy Blue Tie", "Burgundy Red Tie", 
-    "Pastel Pink Tie", "Sunny Yellow Tie", "Deep Purple Tie", "White Silk Tie", 
-    "Sky Blue Tie", "Orange Pattern Tie", "Chocolate Brown Tie"
-  ],
-  Bows: [
-    "Classic Black Bow", "Velvet Red Bow", "Midnight Blue Bow", "White Polka Dot Bow", 
-    "Silver Glitter Bow", "Gold Satin Bow", "Burgundy Bow", "White Wedding Bow", 
-    "Forest Green Bow", "Rose Pink Bow", "Lemon Yellow Bow", "Festive Pattern Bow", 
-    "Dark Grey Bow", "Electric Blue Bow", "Modern Teal Bow", "Brown Suede Bow", 
-    "Royal Purple Bow", "Bright Orange Bow", "Mint Green Bow", "Checkered Red/White Bow"
+  Backgrounds: [
+    { name: "Pure White", color: "#FFFFFF" },
+    { name: "Light Blue", color: "#ADD8E6" },
+    { name: "Royal Blue", color: "#002366" },
+    { name: "Slate Grey", color: "#708090" },
+    { name: "Studio Grey", color: "#E0E0E0" },
+    { name: "Cream White", color: "#FFFDD0" },
+    { name: "Passport Blue", color: "#0055A4" },
+    { name: "Dark Blue", color: "#00008B" },
+    { name: "Soft Pink", color: "#FFB6C1" },
+    { name: "Mint Green", color: "#98FF98" }
   ]
 };
-
-const BG_COLOR_PRESETS = [
-  "#FFFFFF", "#F5F5F5", "#E8E8E8", "#D3D3D3", "#A9A9A9",
-  "#B9D9EB", "#89CFF0", "#00BFFF", "#4169E1", "#000080",
-  "#FAF9F6", "#F0F8FF", "#E6E6FA", "#FFFDD0", "#F5F5DC",
-  "#B0C4DE", "#708090", "#8C92AC", "#B0E0E6", "#6495ED"
-];
 
 const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, onConfigChange, onComplete }) => {
   const { t } = useTranslation();
@@ -70,9 +61,17 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [activeTab, setActiveTab] = useState<'ai' | 'clothes'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'clothes'>('clothes');
   const [clothSubTab, setClothSubTab] = useState<keyof typeof CLOTHING_CATEGORIES>('Suits');
   const [selectedBgColor, setSelectedBgColor] = useState('#FFFFFF');
+  
+  // Enhancement states
+  const [enhanceSettings, setEnhanceSettings] = useState({
+    sharpness: 50,
+    brightness: 50,
+    contrast: 50
+  });
+
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [viewMode, setViewMode] = useState<'single' | 'grid'>('single');
@@ -129,7 +128,12 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
     setIsProcessing(true);
     try {
       const sourceImage = isCropping ? baseImage : (croppedImage || baseImage);
-      const result = await editUserPhoto(sourceImage, action, item);
+      const result = await editUserPhoto(
+        sourceImage, 
+        action, 
+        item, 
+        action === 'enhance' ? enhanceSettings : undefined
+      );
       addToHistory(result, !isCropping);
     } catch (err) {
       alert("AI Processing error. Please try a clearer photo.");
@@ -168,11 +172,16 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
   return (
     <div className="space-y-8 relative">
       {isProcessing && (
-        <div className="absolute inset-0 z-[100] bg-blue-950/80 backdrop-blur-md flex flex-col items-center justify-center rounded-3xl animate-in fade-in duration-300">
-          <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-400 rounded-full animate-spin"></div>
-          <div className="mt-6 text-center">
-            <p className="text-xl font-black text-white">{t('ai_working')}</p>
-            <p className="text-blue-300">{t('ai_applying')}</p>
+        <div className="fixed inset-0 z-[100] bg-blue-950/80 backdrop-blur-md flex flex-col items-center justify-center animate-in fade-in duration-300">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-blue-500/20 border-t-blue-400 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <i className="fa-solid fa-wand-magic-sparkles text-blue-400 text-xl animate-pulse"></i>
+            </div>
+          </div>
+          <div className="mt-8 text-center px-4">
+            <p className="text-2xl font-black text-white uppercase tracking-tighter">{t('ai_working')}</p>
+            <p className="text-blue-300 text-xs font-bold tracking-[0.2em] uppercase mt-2">{t('ai_applying')}</p>
           </div>
         </div>
       )}
@@ -189,6 +198,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
               <button 
                 onClick={() => historyIndex > 0 && addToHistory(history[historyIndex-1].image, history[historyIndex-1].isCropped)} 
                 className={`p-2 rounded-lg transition-colors ${historyIndex > 0 ? 'bg-blue-600/40 text-blue-200' : 'bg-blue-900/10 text-blue-800 cursor-not-allowed'}`}
+                title="Undo"
               >
                 <i className="fa-solid fa-rotate-left"></i>
               </button>
@@ -205,7 +215,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
               <Cropper image={baseImage} crop={crop} zoom={zoom} aspect={aspect} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
             ) : (
               <div className="w-full h-full flex items-center justify-center p-8 bg-grid-slate-900/[0.04]">
-                <img src={croppedImage!} alt="Edited" className="max-h-full rounded-lg shadow-2xl border-8 border-white" />
+                <img src={croppedImage!} alt="Edited" className="max-h-full rounded-lg shadow-2xl border-8 border-white transition-all duration-500" />
               </div>
             )}
           </div>
@@ -218,32 +228,76 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
         <div className="w-full lg:w-[420px] flex flex-col gap-4">
           <div className="glass-card rounded-[2.5rem] flex flex-col min-h-[600px] border border-blue-500/20 shadow-2xl overflow-hidden">
             <div className="flex p-2 bg-blue-950/40 gap-1">
+              <button onClick={() => setActiveTab('clothes')} className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase transition-all ${activeTab === 'clothes' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}>Style Studio</button>
               <button onClick={() => setActiveTab('ai')} className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase transition-all ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}>{t('ai_tools')}</button>
-              <button onClick={() => setActiveTab('clothes')} className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase transition-all ${activeTab === 'clothes' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}>{t('in_clothes')}</button>
             </div>
 
             <div className="p-6 flex-grow overflow-y-auto no-scrollbar space-y-8">
               {activeTab === 'ai' ? (
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => handleAiEdit('enhance')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all">
+                  <div className="space-y-6 p-4 bg-blue-900/10 rounded-3xl border border-blue-500/10">
+                    <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white"><i className="fa-solid fa-wand-magic-sparkles"></i></div>
-                      <span className="text-xs font-bold text-white">{t('photo_enhance')}</span>
-                    </button>
-                    <button onClick={() => handleAiEdit('remove_bg')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white"><i className="fa-solid fa-user-check"></i></div>
-                      <span className="text-xs font-bold text-white">{t('remove_bg')}</span>
+                      <h4 className="text-sm font-black text-white uppercase tracking-widest">{t('photo_enhance')}</h4>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-black text-blue-500 uppercase">Sharpness</label>
+                          <span className="text-[10px] font-bold text-white">{enhanceSettings.sharpness}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={enhanceSettings.sharpness}
+                          onChange={(e) => setEnhanceSettings({...enhanceSettings, sharpness: parseInt(e.target.value)})}
+                          className="w-full accent-blue-500 bg-blue-900/40 rounded-lg h-1.5 appearance-none cursor-pointer"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-black text-blue-500 uppercase">Brightness</label>
+                          <span className="text-[10px] font-bold text-white">{enhanceSettings.brightness}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={enhanceSettings.brightness}
+                          onChange={(e) => setEnhanceSettings({...enhanceSettings, brightness: parseInt(e.target.value)})}
+                          className="w-full accent-blue-500 bg-blue-900/40 rounded-lg h-1.5 appearance-none cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <label className="text-[10px] font-black text-blue-500 uppercase">Contrast</label>
+                          <span className="text-[10px] font-bold text-white">{enhanceSettings.contrast}%</span>
+                        </div>
+                        <input 
+                          type="range" 
+                          min="0" max="100" 
+                          value={enhanceSettings.contrast}
+                          onChange={(e) => setEnhanceSettings({...enhanceSettings, contrast: parseInt(e.target.value)})}
+                          className="w-full accent-blue-500 bg-blue-900/40 rounded-lg h-1.5 appearance-none cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={() => handleAiEdit('enhance')}
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase shadow-lg transition-all active:scale-[0.98]"
+                    >
+                      Apply Enhancement
                     </button>
                   </div>
 
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest">{t('bg_color')}</h4>
-                    <div className="grid grid-cols-5 gap-2">
-                      {BG_COLOR_PRESETS.map((color) => (
-                        <button key={color} onClick={() => setSelectedBgColor(color)} className={`w-full aspect-square rounded-full border-2 transition-all ${selectedBgColor.toLowerCase() === color.toLowerCase() ? 'border-blue-400 scale-110' : 'border-white/10'}`} style={{ backgroundColor: color }} />
-                      ))}
-                    </div>
-                    <button onClick={() => handleAiEdit('change_bg_color', selectedBgColor)} className="w-full py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase">{t('apply_bg')}</button>
+                  <div className="grid grid-cols-1 gap-3">
+                    <button onClick={() => handleAiEdit('remove_bg')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex items-center gap-4 hover:bg-blue-900/40 transition-all text-left">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white"><i className="fa-solid fa-user-check"></i></div>
+                      <span className="text-xs font-bold text-white uppercase tracking-widest">{t('remove_bg')}</span>
+                    </button>
                   </div>
 
                   <div className="pt-4 border-t border-blue-500/10 space-y-6">
@@ -257,19 +311,70 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <div className="flex gap-1 bg-blue-950/20 p-1 rounded-xl">
+                  <div className="flex flex-wrap gap-1 bg-blue-950/20 p-1 rounded-xl">
                     {Object.keys(CLOTHING_CATEGORIES).map((cat) => (
-                      <button key={cat} onClick={() => setClothSubTab(cat as any)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase ${clothSubTab === cat ? 'bg-blue-600 text-white' : 'text-blue-500'}`}>{cat}</button>
+                      <button key={cat} onClick={() => setClothSubTab(cat as any)} className={`flex-1 py-2 px-2 rounded-lg text-[9px] font-black uppercase whitespace-nowrap transition-all ${clothSubTab === cat ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-500 hover:bg-blue-600/10'}`}>{cat}</button>
                     ))}
                   </div>
-                  <div className="grid grid-cols-1 gap-2">
-                    {CLOTHING_CATEGORIES[clothSubTab].map((item, idx) => (
-                      <button key={idx} onClick={() => handleAiEdit('apply_clothes', item)} className="w-full p-4 rounded-2xl bg-blue-900/10 border border-blue-500/5 text-left text-xs font-bold text-blue-100 hover:bg-blue-900/30">
-                        <span className="text-[10px] text-blue-500 font-black uppercase block">{clothSubTab.slice(0, -1)} #{idx + 1}</span>
-                        <span className="text-sm font-bold text-white">{item}</span>
-                      </button>
-                    ))}
-                  </div>
+
+                  {clothSubTab === 'Backgrounds' ? (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      <div className="grid grid-cols-2 gap-3">
+                        {(CLOTHING_CATEGORIES.Backgrounds as any[]).map((bg, idx) => (
+                          <button 
+                            key={idx} 
+                            onClick={() => handleAiEdit('change_bg_color', bg.name)}
+                            className="group flex flex-col gap-2 p-3 rounded-2xl bg-blue-900/10 border border-blue-500/5 hover:bg-blue-600/20 transition-all text-left ring-offset-2 ring-blue-500 hover:ring-2"
+                          >
+                            <div className="w-full h-12 rounded-xl shadow-inner border border-white/10" style={{ backgroundColor: bg.color }}></div>
+                            <span className="text-[10px] font-black text-white uppercase tracking-tighter truncate">{bg.name}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="p-4 bg-blue-900/10 rounded-3xl border border-blue-500/10 space-y-4">
+                        <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest flex items-center gap-2">
+                          <i className="fa-solid fa-palette"></i> Custom Color
+                        </h4>
+                        <div className="flex items-center gap-4 bg-blue-950/40 p-4 rounded-2xl border border-blue-500/10">
+                          <div className="relative w-12 h-12 rounded-xl overflow-hidden shadow-inner border border-white/10 flex-shrink-0">
+                            <input 
+                              type="color" 
+                              value={selectedBgColor} 
+                              onBlur={(e) => handleAiEdit('change_bg_color', e.target.value)}
+                              onChange={(e) => setSelectedBgColor(e.target.value)} 
+                              className="absolute -inset-2 w-16 h-16 cursor-pointer bg-transparent border-none appearance-none"
+                            />
+                          </div>
+                          <div className="flex flex-col flex-grow">
+                            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Pick Color</span>
+                            <span className="text-sm font-bold text-white uppercase">{selectedBgColor}</span>
+                          </div>
+                        </div>
+                        <p className="text-[9px] text-blue-500/60 font-bold text-center uppercase">Applies immediately when color is chosen</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                      {(CLOTHING_CATEGORIES[clothSubTab as keyof typeof CLOTHING_CATEGORIES] as string[]).map((item, idx) => (
+                        <button 
+                          key={idx} 
+                          onClick={() => handleAiEdit('apply_clothes', item)} 
+                          className="group w-full p-4 rounded-2xl bg-blue-900/10 border border-blue-500/5 text-left transition-all hover:bg-blue-600/20 active:scale-[0.98] ring-offset-2 ring-blue-500 hover:ring-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="text-[9px] text-blue-500 font-black uppercase block mb-1">{clothSubTab.slice(0, -1)} #{idx + 1}</span>
+                              <span className="text-sm font-bold text-white group-hover:text-blue-100">{item}</span>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                                <i className="fa-solid fa-plus text-[10px]"></i>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

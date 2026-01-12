@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from './TranslationContext';
 import { COMPLAINT_WHATSAPP } from '../constants';
@@ -88,7 +87,7 @@ const Header: React.FC<HeaderProps> = ({ onHome, user, onLogout, onUpdateUser, o
 
   const handleShare = async () => {
     const shareData = {
-      title: 'BluePrint - Passport AI Studio',
+      title: 'Orgeta - Passport AI Studio',
       text: 'Create professional passport photos in 60 seconds with AI!',
       url: window.location.href,
     };
@@ -148,11 +147,11 @@ const Header: React.FC<HeaderProps> = ({ onHome, user, onLogout, onUpdateUser, o
             )}
           </div>
           <div onClick={onHome} className="flex items-center gap-2 cursor-pointer group">
-            <div className="w-10 h-10 blue-gradient rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 bg-[#000080] rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <i className="fa-solid fa-passport text-white text-xl"></i>
             </div>
-            <span className="text-2xl font-black tracking-tighter text-blue-50">
-              BLUE<span className="text-blue-500">PRINT</span>
+            <span className="text-2xl font-black tracking-tighter text-blue-600 drop-shadow-[0_0_8px_rgba(37,99,235,0.4)]">
+              Orgeta
             </span>
           </div>
         </div>

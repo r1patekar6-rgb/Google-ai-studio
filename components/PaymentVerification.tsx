@@ -26,7 +26,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
   const [accessKey, setAccessKey] = useState('');
   const [showKeySuccess, setShowKeySuccess] = useState(false);
 
-  const MASTER_ACCESS_KEY = 'ivik@6';
+  const MASTER_ACCESS_KEY = 'punaji@ivki';
 
   useEffect(() => {
     if (isUnlocked || isExpired) return;
@@ -143,7 +143,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
     );
   }
 
-  const paymentLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(RECIPIENT_NAME)}&am=${amount}&cu=${currencyCode}&tn=BluePrint%20Passport%20Photo`;
+  const paymentLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(RECIPIENT_NAME)}&am=${amount}&cu=${currencyCode}&tn=Orgeta%20Passport%20Photo`;
 
   return (
     <div className={`space-y-8 glass-card p-6 md:p-10 rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${isExpired ? 'opacity-75 border-rose-500/30' : 'border-blue-500/20 shadow-2xl'}`}>

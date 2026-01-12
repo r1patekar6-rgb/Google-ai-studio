@@ -8,53 +8,53 @@ export const INDIAN_LANGUAGES = [
 ];
 
 export const INR_PRICING = [
-  { amount: 37, photos: 21, label: 'Standard', validityDays: 1, uses: 1 },
-  { amount: 47, photos: 30, label: 'Value', validityDays: 1, uses: 1 },
-  { amount: 49, photos: 37, label: 'Premium', validityDays: 1, uses: 1 },
-  { amount: 60, photos: 45, label: 'Premium 1+', validityDays: 1, uses: 1 }
+  { amount: 37, photos: 21, label: 'Standard', validityDays: 1, uses: 1, description: 'Single document grid. Perfect for basics.' },
+  { amount: 47, photos: 30, label: 'Value', validityDays: 1, uses: 1, description: 'Optimized density. Best for family sets.' },
+  { amount: 49, photos: 37, label: 'Premium', validityDays: 1, uses: 1, description: 'Ultra-HD output. Official use recommended.' },
+  { amount: 60, photos: 45, label: 'Premium 1+', validityDays: 1, uses: 1, description: 'Maximum sheet capacity for bulk printing.' }
 ];
 
 export const USD_PRICING = [
-  { amount: 5, photos: 21, label: 'Standard', validityDays: 1, uses: 1 },
-  { amount: 10, photos: 30, label: 'Value', validityDays: 1, uses: 1 },
-  { amount: 15, photos: 37, label: 'Premium', validityDays: 1, uses: 1 }
+  { amount: 5, photos: 21, label: 'Standard', validityDays: 1, uses: 1, description: 'Single sheet layout. High resolution.' },
+  { amount: 10, photos: 30, label: 'Value', validityDays: 1, uses: 1, description: 'Multi-document set. Best for visa apps.' },
+  { amount: 15, photos: 37, label: 'Premium', validityDays: 1, uses: 1, description: 'Priority processing & HD quality.' }
 ];
 
 export const INR_BULK_PLANS = [
   { 
     amount: 340, 
     label: 'Premium 1++', 
-    description: '10 Uses of ₹37 Plan', 
+    description: '10 Uses of ₹37 Plan. Save ₹30 instantly.', 
     originalPrice: 370, 
-    validity: '2 Months',
-    validityDays: 60,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 10,
     icon: 'fa-layer-group'
   },
   { 
     amount: 430, 
     label: 'Premium 2++', 
-    description: '10 Uses of ₹47 Plan', 
+    description: '10 Uses of ₹47 Plan. For regular users.', 
     originalPrice: 470, 
-    validity: '2 Months',
-    validityDays: 60,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 10,
     icon: 'fa-boxes-stacked'
   },
   { 
     amount: 410, 
     label: 'Premium 3++', 
-    description: '10 Uses of ₹49 Plan', 
+    description: '10 Uses of ₹49 Plan. Professional choice.', 
     originalPrice: 490, 
-    validity: '2 Months',
-    validityDays: 60,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 10,
     icon: 'fa-crown'
   },
   { 
     amount: 1000, 
     label: 'Gold Premium', 
-    description: '30 Uses of ₹37 Plan', 
+    description: '30 Uses of ₹37 Plan. 1 Year valid.', 
     originalPrice: 1110, 
     validity: '12 Months',
     validityDays: 365,
@@ -68,40 +68,40 @@ export const USD_BULK_PLANS = [
   { 
     amount: 50, 
     label: 'Premium 1++', 
-    description: '11 Uses of $5 Plan', 
+    description: '11 Uses of $5 Plan. Save $5.', 
     originalPrice: 55, 
-    validity: '3 Months',
-    validityDays: 90,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 11,
     icon: 'fa-layer-group'
   },
   { 
     amount: 100, 
     label: 'Premium 2++', 
-    description: '12 Uses of $10 Plan', 
+    description: '12 Uses of $10 Plan. Pro studio pack.', 
     originalPrice: 120, 
-    validity: '4 Months',
-    validityDays: 120,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 12,
     icon: 'fa-boxes-stacked'
   },
   { 
     amount: 150, 
     label: 'Premium 3++', 
-    description: '13 Uses of $15 Plan', 
+    description: '13 Uses of $15 Plan. Max value.', 
     originalPrice: 195, 
-    validity: '6 Months',
-    validityDays: 180,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 13,
     icon: 'fa-crown'
   },
   { 
     amount: 200, 
     label: 'Gold Premium 1++', 
-    description: '41 Uses of $5 Plan', 
+    description: '41 Uses of $5 Plan. 1 Year valid.', 
     originalPrice: 205, 
-    validity: '1.5 Years',
-    validityDays: 547,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 41,
     icon: 'fa-gem',
     isGold: true
@@ -109,10 +109,10 @@ export const USD_BULK_PLANS = [
   { 
     amount: 400, 
     label: 'Gold Premium 2++', 
-    description: '42 Uses of $10 Plan', 
+    description: '42 Uses of $10 Plan. Professional set.', 
     originalPrice: 420, 
-    validity: '2.5 Years',
-    validityDays: 912,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 42,
     icon: 'fa-shield-halved',
     isGold: true
@@ -120,10 +120,10 @@ export const USD_BULK_PLANS = [
   { 
     amount: 600, 
     label: 'Gold Premium 3++', 
-    description: '45 Uses of $15 Plan', 
+    description: '45 Uses of $15 Plan. 1 Year valid.', 
     originalPrice: 675, 
-    validity: '4 Years',
-    validityDays: 1460,
+    validity: '12 Months',
+    validityDays: 365,
     uses: 45,
     icon: 'fa-bolt-lightning',
     isGold: true

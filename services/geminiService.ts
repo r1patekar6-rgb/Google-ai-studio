@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { VerificationStatus, VerificationResult } from '../types';
 import { REPORT_EMAIL, INR_PRICING, USD_PRICING, INR_BULK_PLANS, USD_BULK_PLANS, RECIPIENT_NAME, UPI_ID } from '../constants';
@@ -25,7 +24,7 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
     const validAmounts = allPlans.map(p => p.amount);
 
     const prompt = `
-      Analyze this payment screenshot. You are a strict financial auditor for BluePrint Passport Studio.
+      Analyze this payment screenshot. You are a strict financial auditor for Orgeta Passport Studio.
       
       CRITICAL VERIFICATION RULES (FAIL IF ANY ARE MISSING):
       1. Recipient Identity: The money MUST be sent to "${RECIPIENT_NAME}". 
@@ -134,6 +133,62 @@ export const logUserToLedger = (userData: any) => {
 };
 
 /**
+ * AI Image Editing Service
+ */
+export const editUserPhoto = async (
+  base64Image: string, 
+  action: 'enhance' | 'remove_bg' | 'apply_clothes' | 'change_bg_color',
+  itemDescription?: string,
+  settings?: { sharpness: number; brightness: number; contrast: number }
+): Promise<string> => {
+  const mimeType = base64Image.split(';')[0].split(':')[1];
+  const data = base64Image.split(',')[1];
+
+  let prompt = "";
+  if (action === 'enhance') {
+    prompt = `Enhance the professional quality of this portrait. 
+    Specific intensity levels:
+    - Sharpness: ${settings?.sharpness || 50}%
+    - Brightness: ${settings?.brightness || 50}%
+    - Contrast: ${settings?.contrast || 50}%
+    Denoise the image, improve skin texture slightly, and sharpen the facial features while maintaining a natural look. Output the enhanced image.`;
+  } else if (action === 'remove_bg') {
+    prompt = "Precisely remove the background and replace it with a clean, solid white background suitable for a professional passport photo.";
+  } else if (action === 'apply_clothes') {
+    prompt = `Replace the person's current outfit with a high-quality, professional ${itemDescription}. 
+    - The new clothing must be perfectly aligned with the person's neck and shoulders.
+    - It must look like a real, natural photograph, not a digital overlay.
+    - Match the lighting, shadows, and perspective of the original face to the new outfit.
+    - Maintain the person's original facial features, hair, and expression exactly.
+    - Ensure the edges between the neck and the new collar are seamless and photorealistic.
+    - The final output should be a professional passport photo on a plain white background.`;
+  } else if (action === 'change_bg_color') {
+    prompt = `Remove the current background and replace it with a solid, uniform ${itemDescription} color. 
+    - Ensure a clean, sharp cut around the person's hair (even fine strands) and shoulders.
+    - No color artifacts, fringing, or bleeding from the old background should remain.
+    - Subtly adjust the ambient lighting on the subject's edges to match the new ${itemDescription} background color for a photorealistic look.`;
+  }
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: {
+      parts: [
+        { inlineData: { data, mimeType } },
+        { text: prompt }
+      ]
+    }
+  });
+
+  for (const part of response.candidates?.[0]?.content?.parts || []) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
+  }
+
+  throw new Error("Failed to process image with AI");
+};
+
+/**
  * Checks if a monthly revenue report is due and sends it.
  */
 export const checkAndSendMonthlyReport = async () => {
@@ -202,45 +257,4 @@ export const checkAndSendUserReport = async () => {
     await sendPaymentNotification(report);
     localStorage.setItem('bp_last_user_report_month', currentMonthYear);
   }
-};
-
-/**
- * AI Image Editing Service
- */
-export const editUserPhoto = async (
-  base64Image: string, 
-  action: 'enhance' | 'remove_bg' | 'apply_clothes' | 'change_bg_color',
-  itemDescription?: string
-): Promise<string> => {
-  const mimeType = base64Image.split(';')[0].split(':')[1];
-  const data = base64Image.split(',')[1];
-
-  let prompt = "";
-  if (action === 'enhance') {
-    prompt = "Enhance the quality of this portrait. Improve lighting, sharpness, and color balance. Output the modified image.";
-  } else if (action === 'remove_bg') {
-    prompt = "Remove the background and replace it with a solid white background.";
-  } else if (action === 'apply_clothes') {
-    prompt = `Change the person's outfit to a professional ${itemDescription} style. Output as professional passport photo on white background.`;
-  } else if (action === 'change_bg_color') {
-    prompt = `Remove the background and replace it with a solid ${itemDescription} background.`;
-  }
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: [
-        { inlineData: { data, mimeType } },
-        { text: prompt }
-      ]
-    }
-  });
-
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
-  }
-
-  throw new Error("Failed to process image with AI");
 };

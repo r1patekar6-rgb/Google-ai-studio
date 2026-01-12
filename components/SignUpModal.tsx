@@ -127,6 +127,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({ onClose, onSuccess, onSwitchT
               <i className="fa-solid fa-user-plus"></i>
             </div>
             <h2 className="text-3xl font-black text-white tracking-tight">{t('sign_up')}</h2>
+            <p className="text-blue-400 font-black uppercase tracking-[0.2em] text-xs">Welcome to Passport Studio</p>
             <p className="text-blue-300/50 text-[10px] font-black uppercase tracking-[0.3em]">{t('auth_desc')}</p>
           </div>
 

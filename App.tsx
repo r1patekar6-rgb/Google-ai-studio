@@ -17,6 +17,30 @@ import { jsPDF } from 'jspdf';
 import { TranslationProvider, useTranslation } from './components/TranslationContext';
 import { checkAndSendMonthlyReport, checkAndSendUserReport } from './services/geminiService';
 
+const QUALITY_BENEFITS = {
+  Standard: {
+    dpi: 72,
+    use: 'Web & Screen',
+    speed: 'Instant',
+    icon: 'fa-display',
+    desc: 'Faster processing for digital records'
+  },
+  High: {
+    dpi: 150,
+    use: 'Home Printing',
+    speed: 'Fast',
+    icon: 'fa-print',
+    desc: 'Sharp results for home inkjet printers'
+  },
+  Maximum: {
+    dpi: 300,
+    use: 'Studio Grade',
+    speed: 'Optimal',
+    icon: 'fa-award',
+    desc: 'Official pro-lab resolution (Recommended)'
+  }
+};
+
 const AppContent: React.FC = () => {
   const { t, language } = useTranslation();
   const [step, setStep] = useState<'home' | 'editor' | 'review' | 'payment'>('home');
@@ -187,7 +211,7 @@ const AppContent: React.FC = () => {
     
     try {
       const canvases = await generateGridCanvases(downloadQuality);
-      const fileName = `BluePrint_${currentPhotoCount}Photos_${config.size.replace(/\s+/g, '_')}`;
+      const fileName = `Orgeta_${currentPhotoCount}Photos_${config.size.replace(/\s+/g, '_')}`;
       if (format === 'PNG') {
         canvases.forEach((canvas, index) => {
           const link = document.createElement('a');
@@ -263,14 +287,18 @@ const AppContent: React.FC = () => {
 
           <div className="relative z-10 text-center space-y-12 max-w-4xl animate-in zoom-in-95 duration-700">
             <div className="space-y-6">
+               <div className="text-blue-600 font-black text-sm uppercase tracking-[0.3em] animate-pulse mb-2">
+                 WELCOME TO STUDIO
+               </div>
                <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
                  <i className="fa-solid fa-shield-check"></i> AI-Verified Studio
                </div>
+               <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter mb-2">Orgeta</div>
                <h1 className="text-6xl md:text-9xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white via-blue-50 to-blue-200 leading-tight tracking-tighter">
-                 {t('hero_title_1')} <br /> {t('hero_title_2')}
+                 <span className="text-4xl md:text-6xl">{t('hero_title_1')} {t('hero_title_2')}</span>
                </h1>
                <p className="text-xl md:text-2xl text-blue-200/50 max-w-2xl mx-auto leading-relaxed">
-                 Join 50,000+ users creating official-standard passport photos in seconds. Sign up now to unlock the studio.
+                 Join 50,000+ users creating official-standard passport photos in seconds with Orgeta. Sign up now to unlock the studio.
                </p>
             </div>
 
@@ -298,8 +326,12 @@ const AppContent: React.FC = () => {
         {step === 'home' && (
           <div className="space-y-16 py-12 animate-in fade-in duration-700">
             <div className="text-center space-y-6">
-              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
-                {t('hero_title_1')} <span className="text-blue-500">{t('hero_title_2')}</span>
+              <div className="text-blue-600 font-black text-sm uppercase tracking-[0.3em] animate-pulse">
+                WELCOME TO STUDIO
+              </div>
+              <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter">Orgeta</div>
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
+                <span className="text-white">{t('hero_title_1')}</span> <span className="text-blue-500">{t('hero_title_2')}</span>
               </h1>
               <p className="text-blue-300/60 text-lg max-w-2xl mx-auto font-medium">
                 {t('hero_desc')}
@@ -323,10 +355,13 @@ const AppContent: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {activePricing.map((p) => (
                     <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-950/40 border border-blue-500/10 hover:border-blue-500/40 hover:bg-blue-600/10 transition-all text-left relative overflow-hidden">
-                      <div className="relative z-10">
-                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{p.label}</p>
-                        <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
-                        <p className="text-xs font-bold text-blue-300/60 mt-1">{p.photos} Photos</p>
+                      <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                          <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{p.label}</p>
+                          <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
+                          <p className="text-xs font-bold text-blue-300/60 mt-1">{p.photos} Photos</p>
+                        </div>
+                        <p className="mt-4 text-[9px] font-bold text-blue-200/40 leading-relaxed uppercase tracking-wider">{p.description}</p>
                       </div>
                       <i className="fa-solid fa-bolt-lightning absolute bottom-4 right-4 text-2xl text-blue-500/10 group-hover:text-blue-500/30 transition-colors"></i>
                     </button>
@@ -344,10 +379,16 @@ const AppContent: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {activeBulk.map((p) => (
-                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-amber-950/20 border border-amber-500/10 hover:border-amber-500/40 hover:bg-amber-600/10 transition-all text-left">
-                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">{p.label}</p>
-                      <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
-                      <p className="text-xs font-bold text-amber-300/60 mt-1">{p.amount} uses</p>
+                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-amber-950/20 border border-amber-500/10 hover:border-amber-500/40 hover:bg-amber-600/10 transition-all text-left relative overflow-hidden">
+                      <div className="relative z-10 flex flex-col h-full justify-between">
+                        <div>
+                          <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">{p.label}</p>
+                          <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
+                          <p className="text-xs font-bold text-amber-300/60 mt-1">{p.uses} Uses • {p.validity}</p>
+                        </div>
+                        <p className="mt-4 text-[9px] font-bold text-amber-200/40 leading-relaxed uppercase tracking-wider">{p.description}</p>
+                      </div>
+                      <i className={`fa-solid ${p.icon} absolute bottom-4 right-4 text-2xl text-amber-500/10 group-hover:text-amber-500/30 transition-colors`}></i>
                     </button>
                   ))}
                 </div>
@@ -389,16 +430,41 @@ const AppContent: React.FC = () => {
             />
 
             {(isUnlocked || userHasActiveSub) && (
-              <div className="glass-card p-10 rounded-[3rem] border border-emerald-500/20 shadow-2xl space-y-10 animate-in slide-in-from-bottom-8 duration-700">
+              <div className="glass-card p-8 md:p-12 rounded-[3rem] border border-emerald-500/20 shadow-2xl space-y-12 animate-in slide-in-from-bottom-8 duration-700">
                 <div className="text-center space-y-3">
                   <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{t('select_quality')}</h3>
                   <p className="text-emerald-400/60 text-[10px] font-black uppercase tracking-[0.4em]">{t('quality_desc')}</p>
                 </div>
                 
-                <div className="grid grid-cols-3 gap-4">
-                  {(['Standard', 'High', 'Maximum'] as const).map(q => (
-                    <button key={q} onClick={() => setDownloadQuality(q)} className={`py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${downloadQuality === q ? 'bg-emerald-600 text-white shadow-lg' : 'bg-emerald-950/20 text-emerald-500 border border-emerald-500/10 hover:bg-emerald-500/10'}`}>
-                      {q}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {(Object.entries(QUALITY_BENEFITS) as [keyof typeof QUALITY_BENEFITS, typeof QUALITY_BENEFITS.Standard][]).map(([q, info]) => (
+                    <button 
+                      key={q} 
+                      onClick={() => setDownloadQuality(q)} 
+                      className={`group relative p-6 rounded-3xl border transition-all text-left flex flex-col gap-4 ${
+                        downloadQuality === q 
+                        ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-600/20' 
+                        : 'bg-emerald-950/20 border-emerald-500/10 text-emerald-500 hover:bg-emerald-500/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                          <i className={`fa-solid ${info.icon} text-lg`}></i>
+                        </div>
+                        <span className={`text-[10px] font-black px-2 py-1 rounded-md ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                          {info.dpi} DPI
+                        </span>
+                      </div>
+                      
+                      <div>
+                        <p className={`text-sm font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white' : 'text-emerald-300'}`}>{q}</p>
+                        <p className={`text-[10px] font-bold mt-1 leading-tight ${downloadQuality === q ? 'text-white/70' : 'text-emerald-500/60'}`}>{info.desc}</p>
+                      </div>
+
+                      <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white/90' : 'text-emerald-400/70'}`}>
+                        <i className="fa-solid fa-circle-check"></i>
+                        {info.use}
+                      </div>
                     </button>
                   ))}
                 </div>
@@ -410,7 +476,10 @@ const AppContent: React.FC = () => {
                     className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
                   >
                     <i className="fa-solid fa-file-image text-2xl group-hover:rotate-12 transition-transform"></i>
-                    <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_png')}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_png')}</span>
+                      <span className="text-[9px] font-bold opacity-60">High-Resolution Image</span>
+                    </div>
                   </button>
                   
                   <button 
@@ -419,7 +488,10 @@ const AppContent: React.FC = () => {
                     className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-3xl shadow-emerald-600/30 active:scale-95'}`}
                   >
                     <i className="fa-solid fa-file-pdf text-2xl group-hover:scale-110 transition-transform"></i>
-                    <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_pdf')}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_pdf')}</span>
+                      <span className="text-[9px] font-bold opacity-60">Best for Printing</span>
+                    </div>
                   </button>
                 </div>
 

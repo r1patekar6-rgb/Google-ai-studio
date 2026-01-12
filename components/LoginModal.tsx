@@ -117,7 +117,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess, onSwitchToS
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#020617]/95 backdrop-blur-xl animate-in fade-in duration-300">
-      <div className="w-full max-w-lg glass-card rounded-[3.5rem] border border-blue-500/30 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden relative">
+      <div className="w-full max-lg glass-card rounded-[3.5rem] border border-blue-500/30 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden relative">
         <button 
           onClick={onClose}
           className="absolute top-8 right-8 w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-blue-400 hover:bg-white/10 transition-colors z-20"
@@ -134,6 +134,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess, onSwitchToS
               <h2 className="text-3xl font-black text-white tracking-tight uppercase">
                 {view === 'login' ? t('login') : 'Account Recovery'}
               </h2>
+              <p className="text-blue-400 font-black uppercase tracking-[0.2em] text-xs">Welcome to Passport Studio</p>
               <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-[0.4em]">
                 {view === 'login' ? 'Authorized Access Only' : 'Create a New Secure Password'}
               </p>
@@ -289,7 +290,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSuccess, onSwitchToS
                   <>
                     First time at the Studio?{' '}
                     <button 
-                      type="button"
+                      type="button" 
                       onClick={onSwitchToSignUp}
                       className="text-blue-400 hover:text-white transition-colors underline decoration-blue-500/30 underline-offset-8"
                     >

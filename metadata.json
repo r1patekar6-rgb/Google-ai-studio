@@ -1,5 +1,5 @@
 {
-  "name": "BluePrint - Passport Photo Maker",
+  "name": "Orgeta - Passport Photo Maker",
   "description": "A modern passport size photo maker with AI-powered payment verification. Create layouts for India, UK, and US passport sizes across various paper formats.",
   "requestFramePermissions": [
     "camera"
