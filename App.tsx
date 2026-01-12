@@ -40,8 +40,60 @@ const QUALITY_BENEFITS = {
   }
 };
 
+const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(onComplete, 800); // Wait for fade out animation
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div className={`fixed inset-0 z-[1000] bg-gradient-to-br from-blue-600 to-blue-900 flex flex-col items-center justify-center transition-all duration-700 ease-in-out ${isVisible ? 'opacity-100' : 'opacity-0 scale-110 pointer-events-none'}`}>
+      <div className="flex flex-col items-center gap-8 animate-in zoom-in-95 duration-1000">
+        <div className="w-24 h-24 bg-white/10 rounded-[2rem] flex items-center justify-center shadow-2xl backdrop-blur-xl border border-white/20">
+          <i className="fa-solid fa-passport text-white text-5xl"></i>
+        </div>
+        <div className="text-center space-y-2">
+          <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter drop-shadow-2xl">
+            Orgeta
+          </h1>
+          <p className="text-blue-100/60 font-black text-xs uppercase tracking-[0.5em] animate-pulse">
+            AI Passport Studio
+          </p>
+        </div>
+      </div>
+      
+      <div className="absolute bottom-12 text-center space-y-4">
+        <div className="px-6 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md">
+          <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest lowercase">
+            {window.location.origin.replace(/^https?:\/\//, '')}
+          </p>
+        </div>
+        <div className="w-48 h-1 bg-white/10 rounded-full mx-auto overflow-hidden">
+          <div className="h-full bg-white w-full animate-progress-fast origin-left"></div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes progress-fast {
+          0% { transform: scaleX(0); }
+          100% { transform: scaleX(1); }
+        }
+        .animate-progress-fast {
+          animation: progress-fast 2.5s linear forwards;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
   const { t, language } = useTranslation();
+  const [isSplash, setIsSplash] = useState(true);
   const [step, setStep] = useState<'home' | 'editor' | 'review' | 'payment'>('home');
   const [user, setUser] = useState<User | null>(null);
   const [showSignUp, setShowSignUp] = useState(false);
@@ -272,6 +324,10 @@ const AppContent: React.FC = () => {
       setIsUnlocked(true);
     }
   };
+
+  if (isSplash) {
+    return <SplashScreen onComplete={() => setIsSplash(false)} />;
+  }
 
   if (!user) {
     return (
