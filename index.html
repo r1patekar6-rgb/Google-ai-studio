@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Orgeta - Passport Photo Maker</title>
+  <title>Orgeta - AI Passport Photo Studio</title>
+  <meta name="description" content="Professional passport photos in 60 seconds with AI. Perfect cropping, auto-retouching, and print-ready grids.">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Orgeta - AI Passport Photo Studio">
+  <meta property="og:description" content="Create official-standard passport photos in seconds. Join 50,000+ users worldwide.">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=1200">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
@@ -14,7 +22,7 @@
     /**
      * Initialize process.env for the browser environment.
      * The 'APP_API_KEY_VALUE_PLACEHOLDER' string is replaced during the Netlify build process
-     * by the command defined in netlify.toml.
+     * by the sed command defined in netlify.toml.
      */
     window.process = {
       env: {
@@ -31,7 +39,7 @@
     }
   </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
     
     :root {
       --bg-color: #020617;
@@ -66,6 +74,20 @@
     .no-scrollbar {
       -ms-overflow-style: none;
       scrollbar-width: none;
+    }
+
+    /* Custom high-contrast focus states for accessibility */
+    input:focus, button:focus {
+      outline: 2px solid #3b82f6;
+      outline-offset: 2px;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.5s ease-out forwards;
     }
   </style>
 <script type="importmap">
