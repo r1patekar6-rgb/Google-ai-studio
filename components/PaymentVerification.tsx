@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from './TranslationContext';
 import { PAY_NUMBER, RECIPIENT_NAME, UPI_ID, REPORT_EMAIL } from '../constants';
@@ -139,12 +138,12 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
 
   if (isUnlocked) {
     return (
-      <div className="p-8 bg-emerald-600/10 border-2 border-emerald-500/30 rounded-[2.5rem] flex flex-col items-center gap-6 text-emerald-400 shadow-2xl animate-in zoom-in-95 duration-500">
-        <div className="w-16 h-16 rounded-full bg-emerald-500 flex items-center justify-center text-white text-3xl shadow-lg flex-shrink-0 animate-bounce">
+      <div className="p-8 bg-blue-600/10 border-2 border-blue-500/30 rounded-[2.5rem] flex flex-col items-center gap-6 text-blue-400 shadow-2xl animate-in zoom-in-95 duration-500">
+        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl shadow-lg flex-shrink-0 animate-bounce">
           <i className="fa-solid fa-check"></i>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-black text-white tracking-tight">{t('access_unlocked')}</p>
+          <p className="text-2xl font-black text-blue-100 tracking-tight">{t('access_unlocked')}</p>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mt-2">Plan Activated Successfully</p>
         </div>
       </div>
@@ -154,22 +153,22 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
   const paymentLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(RECIPIENT_NAME)}&am=${amount}&cu=${currencyCode}&tn=Orgeta%20Passport%20Photo`;
 
   return (
-    <div className={`space-y-8 glass-card p-6 md:p-10 rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${isExpired ? 'opacity-75 border-rose-500/30' : 'border-blue-500/20 shadow-2xl'}`}>
+    <div className={`space-y-8 bg-blue-950/40 backdrop-blur-xl p-6 md:p-10 rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${isExpired ? 'opacity-75 border-rose-500/30' : 'border-blue-500/30 shadow-2xl'}`}>
       <div className="flex justify-center mb-2">
-        <div className={`px-6 py-2 rounded-full border flex items-center gap-3 transition-colors ${timeLeft < 30 ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'}`}>
+        <div className={`px-6 py-2 rounded-full border flex items-center gap-3 transition-colors ${timeLeft < 30 ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse' : 'bg-blue-600/10 border-blue-500/20 text-blue-400'}`}>
           <i className="fa-solid fa-clock-rotate-left"></i>
           <span className="text-sm font-black tracking-widest uppercase">Session Expires: {formatTime(timeLeft)}</span>
         </div>
       </div>
 
       <div className="text-center space-y-3">
-        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 transition-colors ${isExpired ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-500/20 text-blue-400'}`}>
+        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 transition-colors ${isExpired ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-600/20 text-blue-400'}`}>
            <i className={`fa-solid ${isExpired ? 'fa-circle-exclamation' : 'fa-shield-halved'} text-2xl`}></i>
         </div>
-        <h2 className="text-4xl font-black text-white tracking-tight">
+        <h2 className="text-4xl font-black text-blue-100 tracking-tight">
           {isExpired ? 'Session Expired' : t('pay_securely')}
         </h2>
-        <p className="text-blue-200/60 text-sm font-medium leading-relaxed max-w-sm mx-auto">
+        <p className="text-blue-400/60 text-sm font-black uppercase leading-relaxed max-w-sm mx-auto tracking-tighter">
           {isExpired 
             ? 'The payment session has timed out. Please go back and select your plan again to restart the process.' 
             : `Pay ${currencySymbol}${amount} to ${RECIPIENT_NAME} first. Then upload your screenshot to activate your plan.`}
@@ -178,11 +177,11 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
 
       {!isExpired && (
         <>
-          <div className="flex flex-col items-center gap-6 bg-blue-950/40 p-8 rounded-[2.5rem] border border-blue-500/10 relative group">
+          <div className="flex flex-col items-center gap-6 bg-blue-900/10 p-8 rounded-[2.5rem] border border-blue-500/10 relative group">
             <div className="w-full max-w-sm">
               <a 
                 href={paymentLink}
-                className="group/pay relative w-full py-6 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-700 flex flex-col items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 overflow-hidden"
+                className="group/pay relative w-full py-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-800 flex flex-col items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 overflow-hidden border border-blue-400/20"
               >
                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/pay:opacity-100 transition-opacity"></div>
                 <div className="flex items-center gap-3">
@@ -198,7 +197,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
             <div className="w-full max-w-sm space-y-2">
               <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-2">Transaction ID / UTR (Mandatory)</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-4 flex items-center text-blue-500 pointer-events-none group-focus-within:text-blue-400">
+                <div className="absolute inset-y-0 left-4 flex items-center text-blue-500/50 pointer-events-none group-focus-within:text-blue-400">
                   <i className="fa-solid fa-receipt"></i>
                 </div>
                 <input 
@@ -206,7 +205,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
                   value={transactionId}
                   onChange={(e) => setTransactionId(e.target.value)}
                   placeholder="Enter 12-digit UTR or Transaction ID"
-                  className="w-full bg-black/40 border border-blue-500/20 rounded-2xl py-4 pl-12 pr-4 text-white font-bold placeholder:text-blue-900 focus:outline-none focus:border-blue-500 transition-all shadow-inner"
+                  className="w-full bg-blue-950/60 border border-blue-500/20 rounded-2xl py-4 pl-12 pr-4 text-blue-50 font-black placeholder:text-blue-800/40 focus:outline-none focus:border-blue-500 transition-all shadow-inner uppercase text-xs"
                 />
               </div>
             </div>
@@ -219,7 +218,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
                   onChange={handleFileChange} 
                   className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
                 />
-                <div className={`w-full py-6 flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed transition-all ${selectedFile ? 'bg-emerald-600/10 border-emerald-500/40 text-emerald-400' : 'bg-blue-900/10 border-blue-500/20 text-blue-400'}`}>
+                <div className={`w-full py-6 flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed transition-all ${selectedFile ? 'bg-blue-600/10 border-blue-400 text-blue-400' : 'bg-blue-900/10 border-blue-500/20 text-blue-500/50'}`}>
                   <i className={`fa-solid ${selectedFile ? 'fa-file-circle-check' : 'fa-camera-retro'} text-xl`}></i>
                   <span className="text-xs font-black uppercase tracking-widest">
                     {selectedFile ? selectedFile.name.substring(0, 20) + '...' : t('upload_receipt')}
@@ -234,7 +233,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
               className={`w-full max-w-sm py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${
                 isVerifying || !transactionId || !selectedFile 
                 ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed border border-blue-500/10' 
-                : 'bg-blue-500 hover:bg-blue-400 text-white shadow-2xl shadow-blue-500/30 animate-in zoom-in-95'
+                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-600/30 animate-in zoom-in-95 border border-blue-400/20'
               }`}
             >
               {isVerifying ? (
@@ -265,7 +264,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
                <span className="text-[9px] font-black text-blue-500/40 uppercase tracking-[0.3em]">Access Key Management</span>
              </div>
              <div className="relative group">
-                <div className={`absolute inset-y-0 left-4 flex items-center transition-colors ${showKeySuccess ? 'text-emerald-400' : 'text-amber-500/40 group-focus-within:text-amber-400'}`}>
+                <div className={`absolute inset-y-0 left-4 flex items-center transition-colors ${showKeySuccess ? 'text-blue-400' : 'text-blue-500/20 group-focus-within:text-blue-400'}`}>
                   <i className={`fa-solid ${showKeySuccess ? 'fa-circle-check' : 'fa-shield-keyhole'}`}></i>
                 </div>
                 <input 
@@ -273,10 +272,10 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
                   value={accessKey}
                   onChange={(e) => handleAccessKeyCheck(e.target.value)}
                   placeholder="Enter Access Key..."
-                  className={`w-full bg-blue-900/5 border rounded-xl py-4 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all ${
+                  className={`w-full bg-blue-900/10 border rounded-xl py-4 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all ${
                     showKeySuccess 
-                    ? 'border-emerald-500/50 text-emerald-400 bg-emerald-500/5' 
-                    : 'border-blue-500/10 text-white placeholder:text-blue-900/30 focus:border-amber-500/30'
+                    ? 'border-blue-500/50 text-blue-400 bg-blue-500/5' 
+                    : 'border-blue-500/10 text-blue-50 placeholder:text-blue-900/30 focus:border-blue-500/40'
                   }`}
                 />
              </div>
@@ -288,14 +287,14 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
         <div className="flex flex-col items-center gap-6 py-10">
            <button 
             onClick={() => window.location.reload()}
-            className="px-12 py-5 bg-rose-600 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-rose-500 transition-all uppercase tracking-widest"
+            className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-blue-500 transition-all uppercase tracking-widest border border-blue-400/20"
            >
              Restart Process
            </button>
         </div>
       )}
 
-      <p className="text-center text-[10px] text-blue-500 font-black uppercase tracking-[0.4em]">{t('secure_checkout')}</p>
+      <p className="text-center text-[10px] text-blue-500/40 font-black uppercase tracking-[0.4em]">{t('secure_checkout')}</p>
     </div>
   );
 };

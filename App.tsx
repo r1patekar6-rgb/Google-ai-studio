@@ -1,6 +1,5 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import Header from './components/Header';
+import Header from './Header';
 import PhotoEditor from './components/PhotoEditor';
 import LayoutReview from './components/LayoutReview';
 import PaymentVerification from './components/PaymentVerification';
@@ -294,7 +293,7 @@ const AppContent: React.FC = () => {
                  <i className="fa-solid fa-shield-check"></i> AI-Verified Studio
                </div>
                <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter mb-2">Orgeta</div>
-               <h1 className="text-6xl md:text-9xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white via-blue-50 to-blue-200 leading-tight tracking-tighter">
+               <h1 className="text-6xl md:text-9xl font-black bg-clip-text text-transparent bg-gradient-to-b from-blue-300 via-blue-500 to-blue-700 leading-tight tracking-tighter">
                  <span className="text-4xl md:text-6xl">{t('hero_title_1')} {t('hero_title_2')}</span>
                </h1>
                <p className="text-xl md:text-2xl text-blue-200/50 max-w-2xl mx-auto leading-relaxed">
@@ -306,7 +305,7 @@ const AppContent: React.FC = () => {
               <button onClick={() => setShowSignUp(true)} className="w-full sm:w-auto px-16 py-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-2xl font-black shadow-3xl shadow-blue-600/40 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4">
                 <i className="fa-solid fa-user-plus"></i> {t('sign_up')} to Start
               </button>
-              <button onClick={() => setShowLogin(true)} className="w-full sm:w-auto px-12 py-8 bg-white/5 hover:bg-white/10 text-blue-400 rounded-full text-xl font-bold border border-blue-500/20 transition-all">
+              <button onClick={() => setShowLogin(true)} className="w-full sm:w-auto px-12 py-8 bg-blue-900/10 hover:bg-blue-900/20 text-blue-400 rounded-full text-xl font-bold border border-blue-500/20 transition-all">
                 {t('login')}
               </button>
             </div>
@@ -319,7 +318,7 @@ const AppContent: React.FC = () => {
   const userHasActiveSub = isSubscriptionValid(user);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#020617]">
       <Header onHome={resetToHome} user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />
       
       <main className="flex-grow container mx-auto px-4 py-8">
@@ -331,15 +330,15 @@ const AppContent: React.FC = () => {
               </div>
               <div className="text-2xl font-black text-blue-600 uppercase tracking-tighter">Orgeta</div>
               <h1 className="text-5xl md:text-7xl font-black tracking-tighter">
-                <span className="text-white">{t('hero_title_1')}</span> <span className="text-blue-500">{t('hero_title_2')}</span>
+                <span className="text-blue-300">{t('hero_title_1')}</span> <span className="text-blue-500">{t('hero_title_2')}</span>
               </h1>
               <p className="text-blue-300/60 text-lg max-w-2xl mx-auto font-medium">
                 {t('hero_desc')}
               </p>
               {userHasActiveSub && (
-                <div className="bg-emerald-500/10 border border-emerald-500/20 px-6 py-4 rounded-3xl inline-flex items-center gap-3">
-                  <i className="fa-solid fa-circle-check text-emerald-400"></i>
-                  <span className="text-sm font-black text-emerald-400 uppercase tracking-widest">
+                <div className="bg-blue-600/10 border border-blue-600/20 px-6 py-4 rounded-3xl inline-flex items-center gap-3">
+                  <i className="fa-solid fa-circle-check text-blue-400"></i>
+                  <span className="text-sm font-black text-blue-400 uppercase tracking-widest">
                     Active Plan: {user.subscription?.remainingUses} Uses Left until {new Date(user.subscription?.expiresAt || '').toLocaleDateString()}
                   </span>
                 </div>
@@ -347,48 +346,50 @@ const AppContent: React.FC = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="glass-card rounded-[3rem] p-10 border border-blue-500/20 shadow-2xl space-y-8">
+              {/* Standard Grids Blue Card */}
+              <div className="bg-blue-950/40 backdrop-blur-xl rounded-[3rem] p-10 border border-blue-500/30 shadow-2xl space-y-8">
                 <div>
-                  <h2 className="text-3xl font-black text-white mb-2">{t('standard_grids')}</h2>
-                  <p className="text-blue-400 font-bold uppercase text-[10px] tracking-widest">{t('standard_desc')}</p>
+                  <h2 className="text-3xl font-black text-blue-400 mb-2">{t('standard_grids')}</h2>
+                  <p className="text-blue-500/60 font-black uppercase text-[10px] tracking-widest">{t('standard_desc')}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {activePricing.map((p) => (
-                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-950/40 border border-blue-500/10 hover:border-blue-500/40 hover:bg-blue-600/10 transition-all text-left relative overflow-hidden">
+                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-900/30 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-600/20 transition-all text-left relative overflow-hidden active:scale-95">
                       <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
-                          <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{p.label}</p>
-                          <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
-                          <p className="text-xs font-bold text-blue-300/60 mt-1">{p.photos} Photos</p>
+                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">{p.label}</p>
+                          <p className="text-3xl font-black text-blue-50">{currencySymbol}{p.amount}</p>
+                          <p className="text-xs font-bold text-blue-400/60 mt-1">{p.photos} Photos</p>
                         </div>
-                        <p className="mt-4 text-[9px] font-bold text-blue-200/40 leading-relaxed uppercase tracking-wider">{p.description}</p>
+                        <p className="mt-4 text-[9px] font-black text-blue-400/30 leading-relaxed uppercase tracking-wider">{p.description}</p>
                       </div>
-                      <i className="fa-solid fa-bolt-lightning absolute bottom-4 right-4 text-2xl text-blue-500/10 group-hover:text-blue-500/30 transition-colors"></i>
+                      <i className="fa-solid fa-bolt-lightning absolute bottom-4 right-4 text-2xl text-blue-500/5 group-hover:text-blue-500/20 transition-colors"></i>
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div className="glass-card rounded-[3rem] p-10 border border-amber-500/20 shadow-2xl space-y-8 bg-gradient-to-br from-amber-500/5 to-transparent">
+              {/* Bulk Savings Blue Card */}
+              <div className="bg-blue-950/40 backdrop-blur-xl rounded-[3rem] p-10 border border-blue-500/30 shadow-2xl space-y-8">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-3xl font-black text-white mb-2">{t('bulk_savings')}</h2>
-                    <p className="text-amber-500 font-bold uppercase text-[10px] tracking-widest">{t('bulk_desc')}</p>
+                    <h2 className="text-3xl font-black text-blue-400 mb-2">{t('bulk_savings')}</h2>
+                    <p className="text-blue-500/60 font-black uppercase text-[10px] tracking-widest">{t('bulk_desc')}</p>
                   </div>
-                  <span className="px-4 py-1.5 bg-amber-500 text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">{t('best_choice')}</span>
+                  <span className="px-4 py-1.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg border border-blue-400/30">{t('best_choice')}</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {activeBulk.map((p) => (
-                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-amber-950/20 border border-amber-500/10 hover:border-amber-500/40 hover:bg-amber-600/10 transition-all text-left relative overflow-hidden">
+                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-900/30 border border-blue-500/20 hover:border-blue-400 hover:bg-blue-600/20 transition-all text-left relative overflow-hidden active:scale-95">
                       <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
-                          <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">{p.label}</p>
-                          <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
-                          <p className="text-xs font-bold text-amber-300/60 mt-1">{p.uses} Uses • {p.validity}</p>
+                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">{p.label}</p>
+                          <p className="text-3xl font-black text-blue-50">{currencySymbol}{p.amount}</p>
+                          <p className="text-xs font-bold text-blue-400/60 mt-1">{p.uses} Uses • {p.validity}</p>
                         </div>
-                        <p className="mt-4 text-[9px] font-bold text-amber-200/40 leading-relaxed uppercase tracking-wider">{p.description}</p>
+                        <p className="mt-4 text-[9px] font-black text-blue-400/30 leading-relaxed uppercase tracking-wider">{p.description}</p>
                       </div>
-                      <i className={`fa-solid ${p.icon} absolute bottom-4 right-4 text-2xl text-amber-500/10 group-hover:text-amber-500/30 transition-colors`}></i>
+                      <i className={`fa-solid ${p.icon} absolute bottom-4 right-4 text-2xl text-blue-500/5 group-hover:text-blue-500/20 transition-colors`}></i>
                     </button>
                   ))}
                 </div>
@@ -430,10 +431,10 @@ const AppContent: React.FC = () => {
             />
 
             {(isUnlocked || userHasActiveSub) && (
-              <div className="glass-card p-8 md:p-12 rounded-[3rem] border border-emerald-500/20 shadow-2xl space-y-12 animate-in slide-in-from-bottom-8 duration-700">
+              <div className="bg-blue-950/40 backdrop-blur-xl p-8 md:p-12 rounded-[3rem] border border-blue-500/30 shadow-2xl space-y-12 animate-in slide-in-from-bottom-8 duration-700">
                 <div className="text-center space-y-3">
-                  <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{t('select_quality')}</h3>
-                  <p className="text-emerald-400/60 text-[10px] font-black uppercase tracking-[0.4em]">{t('quality_desc')}</p>
+                  <h3 className="text-3xl font-black text-blue-300 uppercase tracking-tighter">{t('select_quality')}</h3>
+                  <p className="text-blue-500/60 text-[10px] font-black uppercase tracking-[0.4em]">{t('quality_desc')}</p>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -443,25 +444,25 @@ const AppContent: React.FC = () => {
                       onClick={() => setDownloadQuality(q)} 
                       className={`group relative p-6 rounded-3xl border transition-all text-left flex flex-col gap-4 ${
                         downloadQuality === q 
-                        ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-600/20' 
-                        : 'bg-emerald-950/20 border-emerald-500/10 text-emerald-500 hover:bg-emerald-500/5'
+                        ? 'bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-600/20' 
+                        : 'bg-blue-900/20 border-blue-500/10 text-blue-400 hover:bg-blue-500/5'
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-400'}`}>
                           <i className={`fa-solid ${info.icon} text-lg`}></i>
                         </div>
-                        <span className={`text-[10px] font-black px-2 py-1 rounded-md ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <span className={`text-[10px] font-black px-2 py-1 rounded-md ${downloadQuality === q ? 'bg-white/20 text-white' : 'bg-blue-500/10 text-blue-400'}`}>
                           {info.dpi} DPI
                         </span>
                       </div>
                       
                       <div>
-                        <p className={`text-sm font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white' : 'text-emerald-300'}`}>{q}</p>
-                        <p className={`text-[10px] font-bold mt-1 leading-tight ${downloadQuality === q ? 'text-white/70' : 'text-emerald-500/60'}`}>{info.desc}</p>
+                        <p className={`text-sm font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white' : 'text-blue-200'}`}>{q}</p>
+                        <p className={`text-[10px] font-bold mt-1 leading-tight ${downloadQuality === q ? 'text-white/70' : 'text-blue-500/60'}`}>{info.desc}</p>
                       </div>
 
-                      <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white/90' : 'text-emerald-400/70'}`}>
+                      <div className={`mt-2 flex items-center gap-2 text-[9px] font-black uppercase tracking-widest ${downloadQuality === q ? 'text-white/90' : 'text-blue-400/70'}`}>
                         <i className="fa-solid fa-circle-check"></i>
                         {info.use}
                       </div>
@@ -473,7 +474,7 @@ const AppContent: React.FC = () => {
                   <button 
                     disabled={isRendering || hasDownloaded}
                     onClick={() => handleDownload('PNG')}
-                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
+                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
                   >
                     <i className="fa-solid fa-file-image text-2xl group-hover:rotate-12 transition-transform"></i>
                     <div className="flex flex-col items-center">
@@ -485,7 +486,7 @@ const AppContent: React.FC = () => {
                   <button 
                     disabled={isRendering || hasDownloaded}
                     onClick={() => handleDownload('PDF')}
-                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-3xl shadow-emerald-600/30 active:scale-95'}`}
+                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed opacity-50' : 'bg-blue-700 hover:bg-blue-600 text-white shadow-3xl shadow-blue-700/30 active:scale-95'}`}
                   >
                     <i className="fa-solid fa-file-pdf text-2xl group-hover:scale-110 transition-transform"></i>
                     <div className="flex flex-col items-center">
@@ -496,19 +497,19 @@ const AppContent: React.FC = () => {
                 </div>
 
                 {hasDownloaded && (
-                  <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl text-center animate-in zoom-in-95">
-                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                  <div className="p-6 bg-blue-600/10 border border-blue-600/20 rounded-3xl text-center animate-in zoom-in-95">
+                    <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">
                       <i className="fa-solid fa-circle-info mr-2"></i>
                       Only one format is allowed per use. Return home to create a new one.
                     </p>
                   </div>
                 )}
 
-                <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-6">
+                <div className="pt-8 border-t border-blue-500/10 flex flex-col items-center gap-6">
                    <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em]">Help & Support</p>
-                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-4 px-8 py-4 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 group">
-                    <i className="fa-brands fa-whatsapp text-emerald-500 text-xl group-hover:scale-125 transition-transform"></i>
-                    <span className="text-xs font-black text-white uppercase tracking-widest">Chat with Assistant</span>
+                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-4 px-8 py-4 bg-blue-900/20 hover:bg-blue-900/40 rounded-full transition-all border border-blue-500/20 group">
+                    <i className="fa-brands fa-whatsapp text-blue-400 text-xl group-hover:scale-125 transition-transform"></i>
+                    <span className="text-xs font-black text-blue-300 uppercase tracking-widest">Chat with Assistant</span>
                    </a>
                 </div>
               </div>
@@ -517,7 +518,7 @@ const AppContent: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-12 border-t border-blue-900/40 bg-blue-950/20">
+      <footer className="py-12 border-t border-blue-900/40 bg-[#020617]">
         <div className="container mx-auto px-4 text-center">
           <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em] mb-4">
             {t('footer_copy')}
@@ -539,8 +540,8 @@ const AppContent: React.FC = () => {
             </div>
           </div>
           <div className="mt-8 text-center space-y-2">
-            <p className="text-2xl font-black text-white uppercase tracking-tighter">{t('generating_hd')}</p>
-            <p className="text-blue-400 text-xs font-bold tracking-widest">{t('encoding_data')}</p>
+            <p className="text-2xl font-black text-blue-100 uppercase tracking-tighter">{t('generating_hd')}</p>
+            <p className="text-blue-500 text-xs font-bold tracking-widest">{t('encoding_data')}</p>
           </div>
         </div>
       )}
