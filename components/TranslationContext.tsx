@@ -1,5 +1,3 @@
-
-// Added React import to satisfy the React.FC namespace usage.
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { TRANSLATIONS, TranslationKey } from '../translations';
 import { GoogleGenAI, Type } from "@google/genai";
@@ -20,7 +18,6 @@ const TranslationContext = createContext<TranslationContextType | undefined>(und
 
 const DEFAULT_LANG = { name: 'Marathi', flag: '🇮🇳' };
 
-// RTL Language detection
 const RTL_LANGS = ['Arabic', 'Hebrew', 'Persian', 'Urdu', 'Pashto', 'Syriac', 'Sorani Kurdish'];
 
 export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -39,12 +36,10 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
   useEffect(() => {
     localStorage.setItem('app_language', JSON.stringify(language));
     
-    // Check if we need to translate this language
     if (language.name !== 'English (US)' && !TRANSLATIONS[language.name] && !dynamicTranslations[language.name]) {
       translateUI(language.name);
     }
 
-    // Apply RTL if necessary
     const isRtl = RTL_LANGS.some(rl => language.name.includes(rl));
     document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
     document.documentElement.lang = language.name;
@@ -53,10 +48,10 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
   const translateUI = async (targetLang: string) => {
     setIsTranslating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const apiKey = (window as any).process?.env?.API_KEY || '';
+      const ai = new GoogleGenAI({ apiKey });
       const baseStrings = TRANSLATIONS['English (US)'] as Record<string, string>;
       
-      // Dynamically build the schema based on our dictionary keys
       const schemaProperties: Record<string, any> = {};
       Object.keys(baseStrings).forEach(key => {
         schemaProperties[key] = { type: Type.STRING };
@@ -68,7 +63,6 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
       1. Provide a professional, natural-sounding translation that fits a modern tech app context.
       2. Keep all JSON keys exactly the same.
       3. Return ONLY the JSON object.
-      4. Do not include markdown formatting or extra text.
       
       JSON to translate: ${JSON.stringify(baseStrings)}`;
 
@@ -87,7 +81,6 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       let responseText = response.text || '{}';
       
-      // Robust cleaning: Handle cases where model might still return markdown
       if (responseText.includes('```json')) {
         responseText = responseText.split('```json')[1].split('```')[0];
       } else if (responseText.includes('```')) {
@@ -100,21 +93,15 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
       localStorage.setItem('dynamic_translations', JSON.stringify(updatedDynamics));
     } catch (error) {
       console.error("Translation failed:", error);
-      // Fallback is handled by the t() function returning English strings
     } finally {
       setIsTranslating(false);
     }
   };
 
   const t = (key: TranslationKey): string => {
-    // 1. Check dynamic translations
     if (dynamicTranslations[language.name]?.[key]) return dynamicTranslations[language.name][key];
-    
-    // 2. Check pre-defined translations
     const langDict = TRANSLATIONS[language.name];
     if (langDict?.[key]) return langDict[key]!;
-    
-    // 3. Fallback to English
     return TRANSLATIONS['English (US)'][key] || key;
   };
 

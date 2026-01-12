@@ -2,13 +2,38 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { VerificationStatus, VerificationResult } from '../types';
 import { REPORT_EMAIL, INR_PRICING, USD_PRICING, INR_BULK_PLANS, USD_BULK_PLANS, RECIPIENT_NAME, UPI_ID } from '../constants';
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+/**
+ * Helper to get Gemini client with the latest API key from environment
+ */
+const getAIClient = () => {
+  const apiKey = (window as any).process?.env?.API_KEY || '';
+  return new GoogleGenAI({ apiKey });
+};
+
+/**
+ * Robust JSON extraction from LLM response
+ */
+const cleanJsonResponse = (text: string) => {
+  try {
+    let cleaned = text.trim();
+    if (cleaned.includes('```json')) {
+      cleaned = cleaned.split('```json')[1].split('```')[0].trim();
+    } else if (cleaned.includes('```')) {
+      cleaned = cleaned.split('```')[1].split('```')[0].trim();
+    }
+    return JSON.parse(cleaned);
+  } catch (e) {
+    console.error("JSON Parse Error", e, text);
+    return {};
+  }
+};
 
 /**
  * Verifies a payment screenshot using Gemini AI with strict rules.
  */
 export const verifyPaymentScreenshot = async (base64Image: string, userProvidedTxId: string): Promise<VerificationResult> => {
   try {
+    const ai = getAIClient();
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -61,10 +86,9 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
       }
     });
 
-    const result = JSON.parse(response.text || '{}');
+    const result = cleanJsonResponse(response.text || '{}');
 
     if (result.status === 'SUCCESS' && result.recipientMatched && result.upiMatched && result.isDateCurrent && result.amountIsPremium) {
-        // Find the matching plan to get validity info
         const matchedPlan = allPlans.find(p => p.amount === result.amountDetected);
         
         return {
@@ -87,6 +111,67 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
       message: "Could not process image. Ensure recipient and transaction ID are clear."
     };
   }
+};
+
+/**
+ * AI Image Editing Service
+ */
+export const editUserPhoto = async (
+  base64Image: string, 
+  action: 'enhance' | 'remove_bg' | 'apply_clothes' | 'change_bg_color',
+  itemDescription?: string,
+  settings?: { sharpness: number; brightness: number; contrast: number }
+): Promise<string> => {
+  const ai = getAIClient();
+  const mimeType = base64Image.split(';')[0].split(':')[1];
+  const data = base64Image.split(',')[1];
+
+  let prompt = "";
+  if (action === 'enhance') {
+    prompt = `Professional portrait enhancement:
+    1. Adjust Sharpness to ${settings?.sharpness || 50}%, Brightness to ${settings?.brightness || 50}%, and Contrast to ${settings?.contrast || 50}%.
+    2. Reduce digital noise and artifacts.
+    3. Subtly improve skin texture while preserving natural pores and details.
+    4. Sharpen the eyes and facial features for a crisp, professional look.
+    5. Maintain realistic color balance and lighting.`;
+  } else if (action === 'remove_bg') {
+    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure, even white (#FFFFFF) background. Ensure sharp and clean edges around the hair and shoulders.";
+  } else if (action === 'apply_clothes') {
+    prompt = `Elite professional digital tailoring for official documents:
+    1. Replace the person's current outfit with a high-resolution, perfectly-fitted ${itemDescription}. 
+    2. The new clothing must align seamlessly with the person's original neck and shoulders, maintaining their posture exactly.
+    3. For items including Suits, Blazers, Shirts, Ties, or Bow Ties: Ensure the knot is centered, the collar fits snugly around the neck, and the fabric textures are ultra-sharp.
+    4. Match the exact lighting angle, intensity, and color temperature from the person's face onto the new ${itemDescription} to achieve 100% photorealistic studio quality.
+    5. Ensure the transition between the skin and the collar is soft and natural with realistic contact shadows.
+    6. Preserve the person's original head, hair, and facial features with zero distortion. Fine hair details must be preserved where they overlap with the new clothing.
+    7. The final result must appear as an authentic, single-exposure studio photograph taken for a professional passport or ID.`;
+  } else if (action === 'change_bg_color') {
+    prompt = `Professional studio background modification:
+    1. Remove the existing background completely.
+    2. Replace it with a flat, uniform, solid ${itemDescription} color.
+    3. Perform ultra-precise edge detection around the person, especially preserving fine hair details and shoulder contours.
+    4. Subtly adjust the ambient "rim lighting" or reflections on the person's edges to naturally match the new ${itemDescription} background color.
+    5. There must be no color bleeding or artifacts from the previous background.`;
+  }
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: {
+      parts: [
+        { inlineData: { data, mimeType } },
+        { text: prompt }
+      ]
+    }
+  });
+
+  const contentParts = response.candidates?.[0]?.content?.parts || [];
+  for (const part of contentParts) {
+    if (part.inlineData) {
+      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+    }
+  }
+
+  throw new Error("Failed to process image with AI");
 };
 
 /**
@@ -130,65 +215,6 @@ export const logUserToLedger = (userData: any) => {
   } catch (e) {
     console.error("User ledger error", e);
   }
-};
-
-/**
- * AI Image Editing Service
- */
-export const editUserPhoto = async (
-  base64Image: string, 
-  action: 'enhance' | 'remove_bg' | 'apply_clothes' | 'change_bg_color',
-  itemDescription?: string,
-  settings?: { sharpness: number; brightness: number; contrast: number }
-): Promise<string> => {
-  const mimeType = base64Image.split(';')[0].split(':')[1];
-  const data = base64Image.split(',')[1];
-
-  let prompt = "";
-  if (action === 'enhance') {
-    prompt = `Professional portrait enhancement:
-    1. Adjust Sharpness to ${settings?.sharpness || 50}%, Brightness to ${settings?.brightness || 50}%, and Contrast to ${settings?.contrast || 50}%.
-    2. Reduce digital noise and artifacts.
-    3. Subtly improve skin texture while preserving natural pores and details.
-    4. Sharpen the eyes and facial features for a crisp, professional look.
-    5. Maintain realistic color balance and lighting.`;
-  } else if (action === 'remove_bg') {
-    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure, even white (#FFFFFF) background. Ensure sharp and clean edges around the hair and shoulders.";
-  } else if (action === 'apply_clothes') {
-    prompt = `Elite professional digital tailoring for official documents:
-    1. Replace the person's current outfit with a high-resolution, perfectly-fitted ${itemDescription}. 
-    2. The new clothing must align seamlessly with the person's original neck and shoulders, maintaining their posture exactly.
-    3. For items including Suits, Blazers, Shirts, Ties, or Bow Ties: Ensure the knot is centered, the collar fits snugly around the neck, and the fabric textures are ultra-sharp.
-    4. Match the exact lighting angle, intensity, and color temperature from the person's face onto the new ${itemDescription} to achieve 100% photorealistic studio quality.
-    5. Ensure the transition between the skin and the collar is soft and natural with realistic contact shadows.
-    6. Preserve the person's original head, hair, and facial features with zero distortion. Fine hair details must be preserved where they overlap with the new clothing.
-    7. The final result must appear as an authentic, single-exposure studio photograph taken for a professional passport or ID.`;
-  } else if (action === 'change_bg_color') {
-    prompt = `Professional studio background modification:
-    1. Remove the existing background completely.
-    2. Replace it with a flat, uniform, solid ${itemDescription} color.
-    3. Perform ultra-precise edge detection around the person, especially preserving fine hair details and shoulder contours.
-    4. Subtly adjust the ambient "rim lighting" or reflections on the person's edges to naturally match the new ${itemDescription} background color.
-    5. There must be no color bleeding or artifacts from the previous background.`;
-  }
-
-  const response = await ai.models.generateContent({
-    model: 'gemini-2.5-flash-image',
-    contents: {
-      parts: [
-        { inlineData: { data, mimeType } },
-        { text: prompt }
-      ]
-    }
-  });
-
-  for (const part of response.candidates?.[0]?.content?.parts || []) {
-    if (part.inlineData) {
-      return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-    }
-  }
-
-  throw new Error("Failed to process image with AI");
 };
 
 /**

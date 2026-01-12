@@ -22,7 +22,7 @@
       }
     };
 
-    // Theme initialization - Defaulting to dark blue
+    // Theme initialization
     const savedTheme = localStorage.getItem('theme') || 'dark';
     if (savedTheme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -34,7 +34,6 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     :root {
-      /* Theme 1: Space Blue (Dark) */
       --bg-color: #020617;
       --text-color: #f1f5f9;
       --glass-bg: rgba(30, 58, 138, 0.15);
@@ -42,7 +41,6 @@
     }
 
     .dark {
-      /* Theme 2: Midnight Black (OLED) */
       --bg-color: #000000;
       --text-color: #f8fafc;
       --glass-bg: rgba(15, 23, 42, 0.4);
@@ -56,20 +54,10 @@
       transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.3s ease;
     }
 
-    .blue-gradient {
-      background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
-    }
-
     .glass-card {
       background: var(--glass-bg);
       backdrop-filter: blur(16px);
       border: 1px solid var(--glass-border);
-      transition: background 0.3s ease, border 0.3s ease;
-    }
-
-    .active-tab {
-      border-bottom: 2px solid #3b82f6;
-      color: #3b82f6;
     }
 
     .no-scrollbar::-webkit-scrollbar {
@@ -79,18 +67,18 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-
-    .text-adaptive { color: #f8fafc; }
   </style>
 <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react": "https://esm.sh/react@^19.0.0",
+    "react-dom": "https://esm.sh/react-dom@^19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@^19.0.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@^1.3.0",
     "react-easy-crop": "https://esm.sh/react-easy-crop@^5.2.0",
-    "jspdf": "https://esm.sh/jspdf@^2.5.1"
+    "jspdf": "https://esm.sh/jspdf@^2.5.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>
