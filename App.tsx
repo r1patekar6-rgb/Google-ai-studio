@@ -1,15 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Header from './components/Header';
 import PhotoEditor from './components/PhotoEditor';
 import LayoutReview from './components/LayoutReview';
 import PaymentVerification from './components/PaymentVerification';
-import { PhotoSize, PaperLayout, PhotoConfig } from './types';
-import { PRICING, BULK_PLANS, PAPER_DIMENSIONS, PHOTO_DIMENSIONS } from './constants';
+import SignUpModal from './components/SignUpModal';
+import LoginModal from './components/LoginModal';
+import { PhotoSize, PaperLayout, PhotoConfig, User, Subscription } from './types';
+import { 
+  INR_PRICING, USD_PRICING, 
+  INR_BULK_PLANS, USD_BULK_PLANS, 
+  PAPER_DIMENSIONS, PHOTO_DIMENSIONS, 
+  COMPLAINT_WHATSAPP, INDIAN_LANGUAGES 
+} from './constants';
 import { jsPDF } from 'jspdf';
+import { TranslationProvider, useTranslation } from './components/TranslationContext';
+import { checkAndSendMonthlyReport, checkAndSendUserReport } from './services/geminiService';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  const { t, language } = useTranslation();
   const [step, setStep] = useState<'home' | 'editor' | 'review' | 'payment'>('home');
+  const [user, setUser] = useState<User | null>(null);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [showLogin, setShowLogin] = useState(false);
+  
   const [userPhoto, setUserPhoto] = useState<string | null>(null);
   const [editedPhoto, setEditedPhoto] = useState<string | null>(null);
   const [config, setConfig] = useState<PhotoConfig>({
@@ -18,14 +32,73 @@ const App: React.FC = () => {
   });
   const [selectedAmount, setSelectedAmount] = useState<number>(37);
   const [isUnlocked, setIsUnlocked] = useState<boolean>(false);
+  const [hasDownloaded, setHasDownloaded] = useState<boolean>(false);
   const [downloadQuality, setDownloadQuality] = useState<'Standard' | 'High' | 'Maximum'>('Maximum');
   const [isRendering, setIsRendering] = useState(false);
+  
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  // Auth initialization
+  useEffect(() => {
+    const saved = localStorage.getItem('bp_user');
+    if (saved) {
+      setUser(JSON.parse(saved));
+    }
+  }, []);
+
+  // Determine pricing locale
+  const isInternational = !INDIAN_LANGUAGES.includes(language.name);
+  const activePricing = isInternational ? USD_PRICING : INR_PRICING;
+  const activeBulk = isInternational ? USD_BULK_PLANS : INR_BULK_PLANS;
+  const currencySymbol = isInternational ? '$' : '₹';
+  const currencyCode = isInternational ? 'USD' : 'INR';
+
+  useEffect(() => {
+    checkAndSendMonthlyReport();
+    checkAndSendUserReport();
+  }, []);
+
+  // Check if subscription is valid
+  const isSubscriptionValid = (u: User | null): boolean => {
+    if (!u || !u.subscription) return false;
+    const now = new Date();
+    const expiry = new Date(u.subscription.expiresAt);
+    return now < expiry && u.subscription.remainingUses > 0;
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('bp_user');
+    setUser(null);
+    setStep('home');
+  };
+
+  const handleAuthSuccess = (name: string, email: string) => {
+    const savedUsers = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
+    const currentUser = savedUsers.find((u: User) => u.email === email);
+    
+    if (currentUser) {
+      setUser(currentUser);
+      localStorage.setItem('bp_user', JSON.stringify(currentUser));
+    } else {
+      const newUser: User = { name, email, phone: '', profileImage: null };
+      setUser(newUser);
+      localStorage.setItem('bp_user', JSON.stringify(newUser));
+    }
+    setShowSignUp(false);
+    setShowLogin(false);
+  };
+
+  const handleUpdateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    localStorage.setItem('bp_user', JSON.stringify(updatedUser));
+  };
 
   const resetToHome = () => {
     setStep('home');
     setUserPhoto(null);
     setEditedPhoto(null);
     setIsUnlocked(false);
+    setHasDownloaded(false);
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -47,30 +120,24 @@ const App: React.FC = () => {
     input?.click();
   };
 
-  const currentPhotoCount = PRICING.find(p => p.amount === selectedAmount)?.photos || 21;
+  const currentPhotoCount = activePricing.find(p => p.amount === selectedAmount)?.photos || activeBulk.find(p => p.amount === selectedAmount)?.amount || 21;
 
   const generateGridCanvases = async (quality: 'Standard' | 'High' | 'Maximum'): Promise<HTMLCanvasElement[]> => {
     const dpi = quality === 'Maximum' ? 300 : quality === 'High' ? 150 : 72;
     const paper = PAPER_DIMENSIONS[config.layout];
     const photo = PHOTO_DIMENSIONS[config.size];
-    
     const mmToPx = (mm: number) => (mm / 25.4) * dpi;
-    
     const gap = mmToPx(1.5);
     const padding = mmToPx(8);
     const photoW = mmToPx(photo.width);
     const photoH = mmToPx(photo.height);
-    
     const canvasW = mmToPx(paper.width);
     const canvasH = mmToPx(paper.height);
-    
     const effectiveWidth = canvasW - (padding * 2);
     const effectiveHeight = canvasH - (padding * 2);
-    
     const cols = Math.max(1, Math.floor((effectiveWidth + gap) / (photoW + gap)));
     const rows = Math.max(1, Math.floor((effectiveHeight + gap) / (photoH + gap)));
     const photosPerPage = cols * rows;
-    
     const totalPages = Math.ceil(currentPhotoCount / photosPerPage);
     const canvases: HTMLCanvasElement[] = [];
 
@@ -84,13 +151,10 @@ const App: React.FC = () => {
       canvas.height = canvasH;
       const ctx = canvas.getContext('2d');
       if (!ctx) continue;
-
       ctx.fillStyle = '#FFFFFF';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       const totalGridWidth = (cols * photoW) + ((cols - 1) * gap);
       const startX = (canvas.width - totalGridWidth) / 2;
-
       const startIdx = p * photosPerPage;
       const endIdx = Math.min(startIdx + photosPerPage, currentPhotoCount);
       const photosOnThisPage = endIdx - startIdx;
@@ -98,28 +162,32 @@ const App: React.FC = () => {
       for (let i = 0; i < photosOnThisPage; i++) {
         const row = Math.floor(i / cols);
         const col = i % cols;
-        
         const x = startX + col * (photoW + gap);
         const y = padding + row * (photoH + gap);
-        
         ctx.drawImage(img, x, y, photoW, photoH);
-        
         ctx.strokeStyle = '#E2E8F0';
         ctx.lineWidth = Math.max(0.5, dpi / 600);
         ctx.strokeRect(x, y, photoW, photoH);
       }
       canvases.push(canvas);
     }
-
     return canvases;
   };
 
   const handleDownload = async (format: 'PNG' | 'PDF') => {
+    if (hasDownloaded) return;
+    
+    // Final check for validity
+    if (!isSubscriptionValid(user)) {
+      alert("Your plan has expired or no uses are left. Please activate a new plan.");
+      return;
+    }
+
     setIsRendering(true);
+    
     try {
       const canvases = await generateGridCanvases(downloadQuality);
       const fileName = `BluePrint_${currentPhotoCount}Photos_${config.size.replace(/\s+/g, '_')}`;
-      
       if (format === 'PNG') {
         canvases.forEach((canvas, index) => {
           const link = document.createElement('a');
@@ -134,16 +202,32 @@ const App: React.FC = () => {
           unit: 'mm',
           format: [paper.width, paper.height]
         });
-        
         canvases.forEach((canvas, index) => {
-          if (index > 0) {
-            pdf.addPage([paper.width, paper.height], paper.width > paper.height ? 'l' : 'p');
-          }
+          if (index > 0) pdf.addPage([paper.width, paper.height], paper.width > paper.height ? 'l' : 'p');
           const imgData = canvas.toDataURL('image/jpeg', 1.0);
           pdf.addImage(imgData, 'JPEG', 0, 0, paper.width, paper.height);
         });
         pdf.save(`${fileName}.pdf`);
       }
+      
+      // Update uses
+      if (user && user.subscription) {
+        const updatedUser = {
+          ...user,
+          subscription: {
+            ...user.subscription,
+            remainingUses: user.subscription.remainingUses - 1
+          }
+        };
+        handleUpdateUser(updatedUser);
+        
+        // Update user ledger
+        const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
+        const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
+        localStorage.setItem('bp_user_ledger', JSON.stringify(updatedLedger));
+      }
+      
+      setHasDownloaded(true);
     } catch (err) {
       console.error(err);
       alert("Export failed. Please try a lower quality.");
@@ -152,242 +236,208 @@ const App: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen flex flex-col bg-[#020617] text-white">
-      <Header onHome={resetToHome} />
+  const handleVerificationSuccess = (sub: Subscription) => {
+    if (user) {
+      const updatedUser = { ...user, subscription: sub };
+      handleUpdateUser(updatedUser);
       
-      {isRendering && (
-        <div className="fixed inset-0 z-[100] bg-blue-950/90 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300">
-           <div className="w-24 h-24 border-8 border-blue-500/20 border-t-blue-500 rounded-full animate-spin shadow-2xl shadow-blue-500/20"></div>
-           <div className="mt-8 text-center space-y-2">
-             <p className="text-3xl font-black text-white tracking-tighter uppercase">GENERATING HD LAYOUT</p>
-             <p className="text-blue-400 font-bold uppercase tracking-widest text-xs animate-pulse">Encoding high-density multi-page data...</p>
-           </div>
-        </div>
-      )}
+      // Update ledger
+      const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
+      const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
+      localStorage.setItem('bp_user_ledger', JSON.stringify(updatedLedger));
+      
+      setIsUnlocked(true);
+    }
+  };
 
-      <main className="flex-grow container mx-auto px-4 py-8 max-w-6xl relative">
-        {step !== 'home' && (
-          <div className="mb-10 flex flex-col sm:flex-row gap-6 items-center justify-between">
-            <div className="flex items-center gap-6 p-4 rounded-3xl bg-blue-900/10 border border-blue-500/10 shadow-inner">
-               <div className="flex flex-col items-start">
-                  <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Active Studio Session</span>
-                  <span className="text-sm font-bold text-white">₹{selectedAmount} • {currentPhotoCount} Photos Layout</span>
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-[#020617] text-white">
+        <Header onHome={() => {}} user={null} onLogout={() => {}} onUpdateUser={handleUpdateUser} onSignUp={() => setShowSignUp(true)} onLogin={() => setShowLogin(true)} />
+        {showSignUp && <SignUpModal onClose={() => setShowSignUp(false)} onSuccess={handleAuthSuccess} onSwitchToLogin={() => { setShowSignUp(false); setShowLogin(true); }} />}
+        {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleAuthSuccess} onSwitchToSignUp={() => { setShowLogin(false); setShowSignUp(true); }} />}
+        
+        <main className="flex-grow flex flex-col items-center justify-center p-4 relative overflow-hidden">
+          <div className="absolute top-1/4 -left-20 w-96 h-96 bg-blue-600/20 rounded-full blur-[120px] animate-pulse"></div>
+          <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-indigo-600/20 rounded-full blur-[120px] animate-pulse delay-700"></div>
+
+          <div className="relative z-10 text-center space-y-12 max-w-4xl animate-in zoom-in-95 duration-700">
+            <div className="space-y-6">
+               <div className="inline-flex items-center gap-3 px-6 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.4em] mb-4">
+                 <i className="fa-solid fa-shield-check"></i> AI-Verified Studio
                </div>
-               <div className="w-12 h-12 rounded-2xl bg-blue-600/20 flex items-center justify-center text-blue-400 shadow-lg border border-blue-500/30">
-                  <i className="fa-solid fa-gem text-xl"></i>
-               </div>
+               <h1 className="text-6xl md:text-9xl font-black bg-clip-text text-transparent bg-gradient-to-b from-white via-blue-50 to-blue-200 leading-tight tracking-tighter">
+                 {t('hero_title_1')} <br /> {t('hero_title_2')}
+               </h1>
+               <p className="text-xl md:text-2xl text-blue-200/50 max-w-2xl mx-auto leading-relaxed">
+                 Join 50,000+ users creating official-standard passport photos in seconds. Sign up now to unlock the studio.
+               </p>
             </div>
 
-            <button 
-              onClick={resetToHome}
-              className="group flex items-center gap-3 px-8 py-3 rounded-full bg-white/5 text-blue-400 font-black text-xs uppercase tracking-widest border border-blue-500/20 hover:bg-blue-600 hover:text-white transition-all shadow-xl active:scale-95"
-            >
-              <i className="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
-              Back to Plans
-            </button>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <button onClick={() => setShowSignUp(true)} className="w-full sm:w-auto px-16 py-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-2xl font-black shadow-3xl shadow-blue-600/40 transition-all hover:scale-105 active:scale-95 flex items-center justify-center gap-4">
+                <i className="fa-solid fa-user-plus"></i> {t('sign_up')} to Start
+              </button>
+              <button onClick={() => setShowLogin(true)} className="w-full sm:w-auto px-12 py-8 bg-white/5 hover:bg-white/10 text-blue-400 rounded-full text-xl font-bold border border-blue-500/20 transition-all">
+                {t('login')}
+              </button>
+            </div>
           </div>
-        )}
+        </main>
+      </div>
+    );
+  }
 
+  const userHasActiveSub = isSubscriptionValid(user);
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header onHome={resetToHome} user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />
+      
+      <main className="flex-grow container mx-auto px-4 py-8">
         {step === 'home' && (
-          <div className="space-y-32 py-20">
-            <section className="text-center space-y-12 max-w-4xl mx-auto">
-              <div className="space-y-8">
-                <h1 className="text-6xl md:text-8xl font-black bg-clip-text text-transparent bg-gradient-to-b from-blue-100 to-blue-50 leading-[1.1] tracking-tight">
-                  Professional <br /> Passports in 60s
-                </h1>
-                <p className="text-xl md:text-2xl text-blue-200/60 max-w-2xl mx-auto leading-relaxed">
-                  The most advanced AI studio for official passport photos. Perfect cropping, auto-retouching, and print-ready grids.
-                </p>
-              </div>
+          <div className="space-y-16 py-12 animate-in fade-in duration-700">
+            <div className="text-center space-y-6">
+              <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter">
+                {t('hero_title_1')} <span className="text-blue-500">{t('hero_title_2')}</span>
+              </h1>
+              <p className="text-blue-300/60 text-lg max-w-2xl mx-auto font-medium">
+                {t('hero_desc')}
+              </p>
+              {userHasActiveSub && (
+                <div className="bg-emerald-500/10 border border-emerald-500/20 px-6 py-4 rounded-3xl inline-flex items-center gap-3">
+                  <i className="fa-solid fa-circle-check text-emerald-400"></i>
+                  <span className="text-sm font-black text-emerald-400 uppercase tracking-widest">
+                    Active Plan: {user.subscription?.remainingUses} Uses Left until {new Date(user.subscription?.expiresAt || '').toLocaleDateString()}
+                  </span>
+                </div>
+              )}
+            </div>
 
-              <div className="relative inline-block group">
-                <input id="main-upload" type="file" accept="image/*" onChange={handlePhotoUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                <button className="px-12 py-6 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-2xl font-black shadow-3xl shadow-blue-600/40 flex items-center gap-4 transition-all hover:scale-105 active:scale-95 group-hover:ring-4 ring-blue-500/20">
-                  <i className="fa-solid fa-camera-retro"></i>
-                  Start Creating
-                </button>
-              </div>
-            </section>
-
-            {/* STANDARD PLANS SECTION */}
-            <section className="space-y-16">
-              <div className="text-center space-y-4">
-                <h2 className="text-4xl font-bold">Standard Grids</h2>
-                <p className="text-blue-300/50">One-time professional layouts for single documents.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-                {PRICING.map(plan => (
-                  <div key={plan.amount} className={`relative p-8 rounded-[2.5rem] bg-blue-900/10 border transition-all hover:-translate-y-2 group flex flex-col ${plan.label === 'Value' ? 'border-blue-400 shadow-2xl shadow-blue-900/20' : 'border-blue-500/10'}`}>
-                    {plan.label === 'Value' && <div className="absolute -top-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-blue-500 text-white text-[10px] font-black rounded-full uppercase tracking-widest">Best Choice</div>}
-                    <div className="mb-8">
-                      <p className="text-blue-400 font-bold uppercase tracking-widest text-xs mb-4">{plan.label}</p>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-5xl font-black">₹{plan.amount}</span>
-                        <span className="text-blue-200/40 text-sm">/ print</span>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div className="glass-card rounded-[3rem] p-10 border border-blue-500/20 shadow-2xl space-y-8">
+                <div>
+                  <h2 className="text-3xl font-black text-white mb-2">{t('standard_grids')}</h2>
+                  <p className="text-blue-400 font-bold uppercase text-[10px] tracking-widest">{t('standard_desc')}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {activePricing.map((p) => (
+                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-blue-950/40 border border-blue-500/10 hover:border-blue-500/40 hover:bg-blue-600/10 transition-all text-left relative overflow-hidden">
+                      <div className="relative z-10">
+                        <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">{p.label}</p>
+                        <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
+                        <p className="text-xs font-bold text-blue-300/60 mt-1">{p.photos} Photos</p>
                       </div>
-                    </div>
-                    <div className="space-y-6 flex-grow mb-10 text-sm text-blue-100/80">
-                      <div className="flex items-center gap-3 font-bold text-white text-lg">
-                        <i className="fa-solid fa-images text-blue-50"></i> {plan.photos} Photos Grid
-                      </div>
-                      <ul className="space-y-4">
-                        {['Official Size Verification', 'Premium AI Retouch', 'PNG & PDF Formats'].map(i => (
-                          <li key={i} className="flex gap-3 items-center opacity-70"><i className="fa-solid fa-check text-blue-500 text-[10px]"></i> {i}</li>
-                        ))}
-                        {plan.label.includes('Premium') && plan.amount !== 49 && (
-                          <li className="text-emerald-400 font-black text-[10px] uppercase tracking-tighter leading-tight bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20">
-                            Save 30 to 40 years from A4 photos.save PDF or PNG
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                    <button onClick={() => selectPlan(plan.amount)} className={`w-full py-5 rounded-2xl font-black transition-all text-sm uppercase tracking-widest ${plan.label === 'Value' ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-blue-950/60 hover:bg-blue-900/60 text-blue-300 border border-blue-800'}`}>Choose {plan.label}</button>
+                      <i className="fa-solid fa-bolt-lightning absolute bottom-4 right-4 text-2xl text-blue-500/10 group-hover:text-blue-500/30 transition-colors"></i>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="glass-card rounded-[3rem] p-10 border border-amber-500/20 shadow-2xl space-y-8 bg-gradient-to-br from-amber-500/5 to-transparent">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-3xl font-black text-white mb-2">{t('bulk_savings')}</h2>
+                    <p className="text-amber-500 font-bold uppercase text-[10px] tracking-widest">{t('bulk_desc')}</p>
                   </div>
-                ))}
+                  <span className="px-4 py-1.5 bg-amber-500 text-black text-[10px] font-black uppercase tracking-widest rounded-full shadow-lg">{t('best_choice')}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {activeBulk.map((p) => (
+                    <button key={p.amount} onClick={() => selectPlan(p.amount)} className="group p-6 rounded-[2rem] bg-amber-950/20 border border-amber-500/10 hover:border-amber-500/40 hover:bg-amber-600/10 transition-all text-left">
+                      <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">{p.label}</p>
+                      <p className="text-3xl font-black text-white">{currencySymbol}{p.amount}</p>
+                      <p className="text-xs font-bold text-amber-300/60 mt-1">{p.amount} uses</p>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </section>
-
-            {/* PREMIUM BULK PLANS SECTION */}
-            <section className="space-y-16">
-              <div className="text-center space-y-4">
-                <h2 className="text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-white to-blue-400">Bulk Savings & Subscriptions</h2>
-                <p className="text-blue-300/50">Maximize your savings with our professional multi-use packages.</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
-                {BULK_PLANS.map(plan => {
-                  const savings = plan.originalPrice - plan.amount;
-                  return (
-                    <div key={plan.label} className={`relative p-8 rounded-[2.5rem] transition-all hover:-translate-y-2 group flex flex-col ${plan.isGold ? 'bg-gradient-to-b from-amber-500/20 to-amber-900/10 border-amber-500/40 shadow-2xl shadow-amber-900/20' : 'bg-blue-900/10 border-blue-500/20 hover:border-blue-400/40'}`}>
-                      <div className="absolute -top-4 right-8 px-4 py-1.5 bg-emerald-500 text-white text-[9px] font-black rounded-full uppercase tracking-widest shadow-lg">
-                        Save ₹{savings}
-                      </div>
-                      <div className="mb-8">
-                        <div className="flex items-center gap-3 mb-4">
-                          <i className={`fa-solid ${plan.icon} ${plan.isGold ? 'text-amber-400' : 'text-blue-400'} text-xl`}></i>
-                          <p className={`font-black uppercase tracking-widest text-xs ${plan.isGold ? 'text-amber-400' : 'text-blue-400'}`}>{plan.label}</p>
-                        </div>
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-5xl font-black">₹{plan.amount}</span>
-                          <span className="text-blue-200/40 text-sm line-through decoration-rose-500/50">₹{plan.originalPrice}</span>
-                        </div>
-                        <p className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest mt-2">
-                          Valid for {plan.validity}
-                        </p>
-                      </div>
-                      <div className="space-y-6 flex-grow mb-10">
-                        <div className="p-4 rounded-2xl bg-black/20 border border-white/5 space-y-3">
-                          <p className="text-sm font-bold text-white leading-tight">{plan.description}</p>
-                          <div className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                            <p className="text-[10px] text-emerald-400 font-black uppercase tracking-tighter leading-tight">
-                              Save 30 to 40 years from A4 photos.save PDF or PNG
-                            </p>
-                          </div>
-                          <p className="text-[9px] text-blue-300/50 leading-relaxed font-bold uppercase tracking-widest">Universal Studio Access</p>
-                        </div>
-                        <ul className="space-y-3 text-[11px] font-medium text-blue-100/60">
-                          <li className="flex gap-2 items-center"><i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i> Priority Processing</li>
-                          <li className="flex gap-2 items-center"><i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i> Unlimited Retakes</li>
-                          <li className="flex gap-2 items-center"><i className="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i> Multi-device Sync</li>
-                        </ul>
-                      </div>
-                      <button 
-                        onClick={() => selectPlan(plan.amount)} 
-                        className={`w-full py-5 rounded-2xl font-black transition-all text-sm uppercase tracking-widest ${plan.isGold ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-xl shadow-amber-900/40' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
-                      >
-                        Activate Plan
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
+            </div>
+            
+            <input id="main-upload" type="file" hidden accept="image/*" onChange={handlePhotoUpload} />
           </div>
         )}
 
         {step === 'editor' && userPhoto && (
           <PhotoEditor 
             image={userPhoto} 
-            config={config} 
+            config={config}
             photoCount={currentPhotoCount}
-            onConfigChange={setConfig} 
-            onComplete={img => { setEditedPhoto(img); setStep('review'); }} 
+            onConfigChange={setConfig}
+            onComplete={(final) => { setEditedPhoto(final); setStep('review'); }}
           />
         )}
 
         {step === 'review' && editedPhoto && (
-          <LayoutReview image={editedPhoto} config={config} photoCount={currentPhotoCount} onProceed={() => setStep('payment')} onBack={() => setStep('editor')} />
+          <LayoutReview 
+            image={editedPhoto} 
+            config={config} 
+            photoCount={currentPhotoCount} 
+            onProceed={() => setStep('payment')}
+            onBack={() => setStep('editor')}
+          />
         )}
 
         {step === 'payment' && (
-          <div className="max-w-2xl mx-auto py-10">
+          <div className="max-w-2xl mx-auto space-y-8">
             <PaymentVerification 
-              onVerified={() => setIsUnlocked(true)} 
-              isUnlocked={isUnlocked}
+              amount={selectedAmount} 
+              isUnlocked={isUnlocked || userHasActiveSub} 
+              onVerified={handleVerificationSuccess} 
+              currencySymbol={currencySymbol}
+              currencyCode={currencyCode}
             />
-            {isUnlocked && (
-              <div className="mt-12 space-y-10 animate-in slide-in-from-bottom-8 duration-700 ease-out">
-                <div className="glass-card p-8 rounded-[2.5rem] border border-blue-500/20 shadow-2xl space-y-6">
-                  <div className="text-center space-y-2">
-                    <h3 className="text-2xl font-black text-white">Select Export Quality</h3>
-                    <p className="text-blue-400 text-xs font-bold uppercase tracking-widest">Recommended for best print results</p>
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-3">
-                    {(['Standard', 'High', 'Maximum'] as const).map((q) => (
-                      <button
-                        key={q}
-                        onClick={() => setDownloadQuality(q)}
-                        className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                          downloadQuality === q 
-                            ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20' 
-                            : 'bg-blue-950/40 border-blue-500/10 hover:border-blue-500/30'
-                        }`}
-                      >
-                        <span className={`text-sm font-black uppercase tracking-tighter ${downloadQuality === q ? 'text-white' : 'text-blue-300'}`}>
-                          {q}
-                        </span>
-                        <span className={`text-[9px] font-bold uppercase tracking-widest ${downloadQuality === q ? 'text-blue-100' : 'text-blue-500'}`}>
-                          {q === 'Maximum' ? '300 DPI' : q === 'High' ? '150 DPI' : '72 DPI'}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
+            {(isUnlocked || userHasActiveSub) && (
+              <div className="glass-card p-10 rounded-[3rem] border border-emerald-500/20 shadow-2xl space-y-10 animate-in slide-in-from-bottom-8 duration-700">
+                <div className="text-center space-y-3">
+                  <h3 className="text-3xl font-black text-white uppercase tracking-tighter">{t('select_quality')}</h3>
+                  <p className="text-emerald-400/60 text-[10px] font-black uppercase tracking-[0.4em]">{t('quality_desc')}</p>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-4">
+                  {(['Standard', 'High', 'Maximum'] as const).map(q => (
+                    <button key={q} onClick={() => setDownloadQuality(q)} className={`py-4 rounded-2xl text-[10px] font-black uppercase transition-all ${downloadQuality === q ? 'bg-emerald-600 text-white shadow-lg' : 'bg-emerald-950/20 text-emerald-500 border border-emerald-500/10 hover:bg-emerald-500/10'}`}>
+                      {q}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col md:flex-row gap-4">
                   <button 
-                    onClick={() => handleDownload('PNG')} 
-                    disabled={isRendering}
-                    className="group relative py-6 bg-white text-blue-950 rounded-2xl font-black text-xl flex flex-col items-center justify-center gap-1 hover:bg-blue-50 transition-all shadow-3xl active:scale-95 overflow-hidden disabled:opacity-50"
+                    disabled={isRendering || hasDownloaded}
+                    onClick={() => handleDownload('PNG')}
+                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl shadow-blue-600/30 active:scale-95'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <i className="fa-solid fa-image text-2xl text-blue-600"></i>
-                      <span>DOWNLOAD PNG</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-blue-950/40 uppercase tracking-widest">Lossless Digital Format</span>
+                    <i className="fa-solid fa-file-image text-2xl group-hover:rotate-12 transition-transform"></i>
+                    <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_png')}</span>
                   </button>
                   
                   <button 
-                    onClick={() => handleDownload('PDF')} 
-                    disabled={isRendering}
-                    className="group relative py-6 bg-emerald-600 text-white rounded-2xl font-black text-xl flex flex-col items-center justify-center gap-1 hover:bg-emerald-500 transition-all shadow-3xl active:scale-95 overflow-hidden disabled:opacity-50"
+                    disabled={isRendering || hasDownloaded}
+                    onClick={() => handleDownload('PDF')}
+                    className={`flex-1 py-8 rounded-[2rem] font-black text-xl flex flex-col items-center gap-2 transition-all group ${hasDownloaded ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-50' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-3xl shadow-emerald-600/30 active:scale-95'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <i className="fa-solid fa-file-pdf text-2xl"></i>
-                      <span>DOWNLOAD PDF</span>
-                    </div>
-                    <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Direct PDF Document</span>
+                    <i className="fa-solid fa-file-pdf text-2xl group-hover:scale-110 transition-transform"></i>
+                    <span className="text-xs uppercase tracking-widest">{hasDownloaded ? 'Download Used' : t('download_pdf')}</span>
                   </button>
                 </div>
 
-                <div className="text-center">
-                  <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] animate-pulse">
-                    <i className="fa-solid fa-circle-check mr-2"></i> 
-                    High Quality Access Unlocked
-                  </p>
+                {hasDownloaded && (
+                  <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl text-center animate-in zoom-in-95">
+                    <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                      <i className="fa-solid fa-circle-info mr-2"></i>
+                      Only one format is allowed per use. Return home to create a new one.
+                    </p>
+                  </div>
+                )}
+
+                <div className="pt-8 border-t border-white/5 flex flex-col items-center gap-6">
+                   <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em]">Help & Support</p>
+                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-4 px-8 py-4 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 group">
+                    <i className="fa-brands fa-whatsapp text-emerald-500 text-xl group-hover:scale-125 transition-transform"></i>
+                    <span className="text-xs font-black text-white uppercase tracking-widest">Chat with Assistant</span>
+                   </a>
                 </div>
               </div>
             )}
@@ -395,12 +445,41 @@ const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="py-16 border-t border-blue-900/30 text-center space-y-4">
-        <p className="text-blue-500/50 text-xs font-bold uppercase tracking-[0.3em]">&copy; 2025 BluePrint Studio • India's Leading Passport AI</p>
-        <p className="text-blue-500/30 text-[10px]">Trusted for Official Document Applications Worldwide</p>
+      <footer className="py-12 border-t border-blue-900/40 bg-blue-950/20">
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-[10px] font-black text-blue-500/40 uppercase tracking-[0.4em] mb-4">
+            {t('footer_copy')}
+          </p>
+          <div className="flex justify-center gap-8">
+            <i className="fa-brands fa-cc-visa text-xl text-blue-500/20"></i>
+            <i className="fa-brands fa-cc-mastercard text-xl text-blue-500/20"></i>
+            <i className="fa-brands fa-google-pay text-2xl text-blue-500/20"></i>
+          </div>
+        </div>
       </footer>
+
+      {isRendering && (
+        <div className="fixed inset-0 z-[300] bg-blue-950/90 backdrop-blur-xl flex flex-col items-center justify-center">
+          <div className="relative">
+            <div className="w-24 h-24 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <i className="fa-solid fa-passport text-blue-500 text-xl animate-pulse"></i>
+            </div>
+          </div>
+          <div className="mt-8 text-center space-y-2">
+            <p className="text-2xl font-black text-white uppercase tracking-tighter">{t('generating_hd')}</p>
+            <p className="text-blue-400 text-xs font-bold tracking-widest">{t('encoding_data')}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
+const App: React.FC = () => (
+  <TranslationProvider>
+    <AppContent />
+  </TranslationProvider>
+);
 
 export default App;

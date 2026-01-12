@@ -36,4 +36,23 @@ export interface VerificationResult {
   status: VerificationStatus;
   message?: string;
   amount?: number;
+  validityDays?: number;
+  totalUses?: number;
+}
+
+export interface Subscription {
+  planAmount: number;
+  activatedAt: string;
+  expiresAt: string;
+  remainingUses: number;
+  totalUses: number;
+}
+
+export interface User {
+  name: string;
+  email: string;
+  phone: string;
+  password?: string;
+  profileImage?: string | null;
+  subscription?: Subscription | null;
 }

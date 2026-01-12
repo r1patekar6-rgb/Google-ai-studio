@@ -4,6 +4,7 @@ import Cropper, { Point, Area } from 'react-easy-crop';
 import { PhotoSize, PaperLayout, PhotoConfig } from '../types';
 import { PHOTO_DIMENSIONS, PAPER_DIMENSIONS } from '../constants';
 import { editUserPhoto } from '../services/geminiService';
+import { useTranslation } from './TranslationContext';
 
 interface PhotoEditorProps {
   image: string;
@@ -35,7 +36,8 @@ const CLOTHING_CATEGORIES = {
     "Classic White Oxford Shirt", "Light Blue Formal Shirt", "Crisp White Wingtip Shirt", 
     "Professional Navy Blue Shirt", "Slate Grey Dress Shirt", "Pastel Pink Business Shirt", 
     "Royal Blue Slim Fit Shirt", "Lavender Professional Shirt", "Charcoal Modern Shirt", 
-    "Burgundy Formal Shirt"
+    "Burgundy Formal Shirt", "Forest Green Dress Shirt", "Midnight Black Formal Shirt", 
+    "Cream Silk Executive Shirt", "Sky Blue Micro-check Shirt", "Light Grey Textured Shirt"
   ],
   Ties: [
     "Solid Power Red Tie", "Sapphire Blue Tie", "Formal Black Tie", "Elegant Silver Tie", 
@@ -60,6 +62,7 @@ const BG_COLOR_PRESETS = [
 ];
 
 const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, onConfigChange, onComplete }) => {
+  const { t } = useTranslation();
   const [isCropping, setIsCropping] = useState(true);
   const [baseImage, setBaseImage] = useState(image);
   const [croppedImage, setCroppedImage] = useState<string | null>(null);
@@ -168,8 +171,8 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
         <div className="absolute inset-0 z-[100] bg-blue-950/80 backdrop-blur-md flex flex-col items-center justify-center rounded-3xl animate-in fade-in duration-300">
           <div className="w-20 h-20 border-4 border-blue-500/20 border-t-blue-400 rounded-full animate-spin"></div>
           <div className="mt-6 text-center">
-            <p className="text-xl font-black text-white">AI Studio Working</p>
-            <p className="text-blue-300">Applying professional modifications...</p>
+            <p className="text-xl font-black text-white">{t('ai_working')}</p>
+            <p className="text-blue-300">{t('ai_applying')}</p>
           </div>
         </div>
       )}
@@ -179,44 +182,19 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
           <div className="flex items-center justify-between bg-blue-900/10 p-4 rounded-2xl border border-blue-500/10">
             <div className="flex flex-col">
               <h3 className="text-xl font-bold text-white">
-                {isCropping ? 'Crop your Portrait' : 'Professional Editing Suite'}
+                {isCropping ? t('crop_portrait') : t('editing_suite')}
               </h3>
-              {!isCropping && (
-                <span className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">
-                  Plan Preview: {photoCount} Photos • {config.layout}
-                </span>
-              )}
             </div>
             <div className="flex gap-2">
-              {!isCropping && (
-                <div className="flex bg-blue-950/50 p-1 rounded-xl mr-2">
-                  <button 
-                    onClick={() => setViewMode('single')} 
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'single' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => setViewMode('grid')} 
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${viewMode === 'grid' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:text-white'}`}
-                  >
-                    Sheet
-                  </button>
-                </div>
-              )}
               <button 
                 onClick={() => historyIndex > 0 && addToHistory(history[historyIndex-1].image, history[historyIndex-1].isCropped)} 
                 className={`p-2 rounded-lg transition-colors ${historyIndex > 0 ? 'bg-blue-600/40 text-blue-200' : 'bg-blue-900/10 text-blue-800 cursor-not-allowed'}`}
-                title="Undo"
               >
                 <i className="fa-solid fa-rotate-left"></i>
               </button>
               {!isCropping && (
-                <button 
-                  onClick={() => setIsCropping(true)} 
-                  className="px-4 py-2 bg-blue-500/10 text-blue-400 rounded-xl text-xs font-bold border border-blue-500/20 hover:bg-blue-500/20 transition-all"
-                >
-                  RE-CROP
+                <button onClick={() => setIsCropping(true)} className="px-4 py-2 bg-blue-500/10 text-blue-400 rounded-xl text-xs font-bold border border-blue-500/20 hover:bg-blue-500/20">
+                  {t('re_crop')}
                 </button>
               )}
             </div>
@@ -224,186 +202,56 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
 
           <div className="relative aspect-square md:aspect-[4/3] w-full rounded-3xl overflow-hidden bg-slate-950 border-2 border-blue-500/20 shadow-2xl flex items-center justify-center">
             {isCropping ? (
-              <Cropper
-                image={baseImage}
-                crop={crop}
-                zoom={zoom}
-                aspect={aspect}
-                onCropChange={setCrop}
-                onCropComplete={(_area, pixels) => setCroppedAreaPixels(pixels)}
-                onZoomChange={setZoom}
-              />
+              <Cropper image={baseImage} crop={crop} zoom={zoom} aspect={aspect} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
             ) : (
-              <>
-                {viewMode === 'single' ? (
-                  <div className="w-full h-full flex items-center justify-center p-8 bg-grid-slate-900/[0.04] animate-in zoom-in-95 duration-300">
-                    <img src={croppedImage!} alt="Edited" className="max-h-full rounded-lg shadow-2xl border-8 border-white" />
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center p-6 bg-slate-900/50 animate-in fade-in duration-500 overflow-hidden">
-                    <div 
-                      ref={gridContainerRef}
-                      className="bg-white shadow-[0_40px_80px_rgba(0,0,0,0.8)] origin-center transition-transform duration-300"
-                      style={{ 
-                        width: `${paperDim.width}mm`, 
-                        height: `${paperDim.height}mm`, 
-                        transform: `scale(${gridScale})`, 
-                        display: 'grid', 
-                        gridTemplateColumns: `repeat(${cols}, ${photoDim.width}mm)`, 
-                        gap: `${gap}mm`, 
-                        padding: `${padding}mm`, 
-                        alignContent: 'flex-start',
-                        justifyContent: 'center',
-                        boxSizing: 'border-box'
-                      }}
-                    >
-                      {Array.from({ length: photoCount }).map((_, i) => (
-                        <div 
-                          key={i} 
-                          className="shadow-[0_1px_2px_rgba(0,0,0,0.1)] border-[0.05mm] border-gray-100"
-                          style={{ 
-                            width: `${photoDim.width}mm`, 
-                            height: `${photoDim.height}mm`, 
-                            backgroundImage: `url(${croppedImage})`, 
-                            backgroundSize: 'cover', 
-                            backgroundPosition: 'center'
-                          }} 
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
+              <div className="w-full h-full flex items-center justify-center p-8 bg-grid-slate-900/[0.04]">
+                <img src={croppedImage!} alt="Edited" className="max-h-full rounded-lg shadow-2xl border-8 border-white" />
+              </div>
             )}
           </div>
 
-          <div className="flex gap-4">
-            {isCropping ? (
-              <button onClick={handleCropSave} className="flex-1 py-5 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black text-xl shadow-xl transition-all transform active:scale-95">
-                Confirm & Start Editing
-              </button>
-            ) : (
-              <button onClick={() => onComplete(croppedImage!)} className="flex-1 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xl shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-3">
-                <i className="fa-solid fa-check-double"></i>
-                Finish & Preview Grid
-              </button>
-            )}
-          </div>
+          <button onClick={isCropping ? handleCropSave : () => onComplete(croppedImage!)} className={`w-full py-5 rounded-2xl font-black text-xl shadow-xl transition-all ${isCropping ? 'bg-blue-600 hover:bg-blue-500' : 'bg-emerald-600 hover:bg-emerald-500'} text-white`}>
+            {isCropping ? t('confirm_start') : t('finish_preview')}
+          </button>
         </div>
 
         <div className="w-full lg:w-[420px] flex flex-col gap-4">
           <div className="glass-card rounded-[2.5rem] flex flex-col min-h-[600px] border border-blue-500/20 shadow-2xl overflow-hidden">
             <div className="flex p-2 bg-blue-950/40 gap-1">
-              <button 
-                onClick={() => setActiveTab('ai')} 
-                className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:bg-blue-900/20'}`}
-              >
-                AI Tools
-              </button>
-              <button 
-                onClick={() => setActiveTab('clothes')} 
-                className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase tracking-widest transition-all ${activeTab === 'clothes' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400 hover:bg-blue-900/20'}`}
-              >
-                In Clothes
-              </button>
+              <button onClick={() => setActiveTab('ai')} className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase transition-all ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}>{t('ai_tools')}</button>
+              <button onClick={() => setActiveTab('clothes')} className={`flex-1 py-4 rounded-2xl text-sm font-black uppercase transition-all ${activeTab === 'clothes' ? 'bg-blue-600 text-white shadow-lg' : 'text-blue-400'}`}>{t('in_clothes')}</button>
             </div>
 
             <div className="p-6 flex-grow overflow-y-auto no-scrollbar space-y-8">
               {activeTab === 'ai' ? (
                 <div className="space-y-6">
-                  <div className="space-y-3">
-                    <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest">Main Tools</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => handleAiEdit('enhance')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all group">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i className="fa-solid fa-wand-magic-sparkles"></i></div>
-                        <span className="text-xs font-bold text-white">Photo Enhance</span>
-                      </button>
-                      <button onClick={() => handleAiEdit('remove_bg')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all group">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white group-hover:scale-110 transition-transform"><i className="fa-solid fa-user-check"></i></div>
-                        <span className="text-xs font-bold text-white">Remove BG</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest">Background Color</h4>
-                    
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-5 gap-2">
-                        {BG_COLOR_PRESETS.map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => setSelectedBgColor(color)}
-                            className={`w-full aspect-square rounded-full border-2 transition-all transform hover:scale-110 active:scale-95 ${selectedBgColor.toLowerCase() === color.toLowerCase() ? 'border-blue-400 scale-110 shadow-lg shadow-blue-500/20' : 'border-white/10'}`}
-                            style={{ backgroundColor: color }}
-                            title={color}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-blue-950/30 border border-blue-500/10">
-                      <div className="relative group">
-                        <input 
-                          type="color" 
-                          value={selectedBgColor} 
-                          onChange={(e) => setSelectedBgColor(e.target.value)}
-                          className="w-14 h-14 rounded-xl cursor-pointer bg-transparent border-none appearance-none outline-none overflow-hidden"
-                          style={{ padding: 0 }}
-                        />
-                        <div 
-                          className="absolute inset-0 pointer-events-none rounded-xl border-2 border-white/20 group-hover:border-white/40 transition-colors"
-                          style={{ backgroundColor: selectedBgColor }}
-                        ></div>
-                      </div>
-                      <div className="flex-grow space-y-1">
-                        <label className="text-[10px] font-black text-blue-400 uppercase tracking-widest block">Custom Hex</label>
-                        <input 
-                          type="text"
-                          value={selectedBgColor.toUpperCase()}
-                          onChange={(e) => setSelectedBgColor(e.target.value)}
-                          className="w-full bg-transparent text-white font-mono text-sm border-none outline-none p-0"
-                          placeholder="#FFFFFF"
-                        />
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => handleAiEdit('change_bg_color', selectedBgColor)} 
-                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-xl shadow-blue-900/20 transition-all active:scale-95"
-                    >
-                      Apply Background
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => handleAiEdit('enhance')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-blue-500 flex items-center justify-center text-white"><i className="fa-solid fa-wand-magic-sparkles"></i></div>
+                      <span className="text-xs font-bold text-white">{t('photo_enhance')}</span>
+                    </button>
+                    <button onClick={() => handleAiEdit('remove_bg')} className="p-4 rounded-2xl bg-blue-900/20 border border-blue-500/10 flex flex-col items-center gap-2 hover:bg-blue-900/40 transition-all">
+                      <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center text-white"><i className="fa-solid fa-user-check"></i></div>
+                      <span className="text-xs font-bold text-white">{t('remove_bg')}</span>
                     </button>
                   </div>
 
-                  <div className="pt-4 border-t border-blue-500/10 space-y-6">
-                    <div>
-                      <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-3">Output Standard</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.values(PhotoSize).map(s => (
-                          <button 
-                            key={s} 
-                            onClick={() => onConfigChange({...config, size: s})} 
-                            className={`px-3 py-3 rounded-xl text-[10px] font-black transition-all border ${config.size === s ? 'bg-blue-600 text-white border-blue-400 shadow-md' : 'bg-blue-900/10 text-blue-400 border-blue-500/10 hover:border-blue-400/30'}`}
-                          >
-                            {s.split(' (')[0]}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest">{t('bg_color')}</h4>
+                    <div className="grid grid-cols-5 gap-2">
+                      {BG_COLOR_PRESETS.map((color) => (
+                        <button key={color} onClick={() => setSelectedBgColor(color)} className={`w-full aspect-square rounded-full border-2 transition-all ${selectedBgColor.toLowerCase() === color.toLowerCase() ? 'border-blue-400 scale-110' : 'border-white/10'}`} style={{ backgroundColor: color }} />
+                      ))}
                     </div>
+                    <button onClick={() => handleAiEdit('change_bg_color', selectedBgColor)} className="w-full py-4 bg-blue-600 text-white rounded-2xl text-xs font-black uppercase">{t('apply_bg')}</button>
+                  </div>
 
-                    <div>
-                      <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest mb-3">Paper Layout</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {Object.values(PaperLayout).map(l => (
-                          <button 
-                            key={l} 
-                            onClick={() => onConfigChange({...config, layout: l})} 
-                            className={`px-3 py-3 rounded-xl text-[10px] font-black transition-all border ${config.layout === l ? 'bg-blue-600 text-white border-blue-400 shadow-md' : 'bg-blue-900/10 text-blue-400 border-blue-500/10 hover:border-blue-400/30'}`}
-                          >
-                            {l.split(' (')[0]}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="pt-4 border-t border-blue-500/10 space-y-6">
+                    <h4 className="text-xs font-black text-blue-500 uppercase tracking-widest">{t('output_standard')}</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {Object.values(PhotoSize).map(s => (
+                        <button key={s} onClick={() => onConfigChange({...config, size: s})} className={`px-3 py-3 rounded-xl text-[10px] font-black border ${config.size === s ? 'bg-blue-600 text-white' : 'bg-blue-900/10 text-blue-400 border-blue-500/10'}`}>{s.split(' (')[0]}</button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -411,30 +259,14 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                 <div className="space-y-6">
                   <div className="flex gap-1 bg-blue-950/20 p-1 rounded-xl">
                     {Object.keys(CLOTHING_CATEGORIES).map((cat) => (
-                      <button 
-                        key={cat}
-                        onClick={() => setClothSubTab(cat as any)}
-                        className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-tighter transition-all ${clothSubTab === cat ? 'bg-blue-600 text-white' : 'text-blue-500 hover:text-blue-300'}`}
-                      >
-                        {cat}
-                      </button>
+                      <button key={cat} onClick={() => setClothSubTab(cat as any)} className={`flex-1 py-2 rounded-lg text-[10px] font-black uppercase ${clothSubTab === cat ? 'bg-blue-600 text-white' : 'text-blue-500'}`}>{cat}</button>
                     ))}
                   </div>
-
                   <div className="grid grid-cols-1 gap-2">
                     {CLOTHING_CATEGORIES[clothSubTab].map((item, idx) => (
-                      <button 
-                        key={idx} 
-                        onClick={() => handleAiEdit('apply_clothes', item)} 
-                        className="w-full p-4 rounded-2xl bg-blue-900/10 border border-blue-500/5 text-left text-xs font-bold text-blue-100 hover:bg-blue-900/30 hover:border-blue-500/20 transition-all flex items-center justify-between group"
-                      >
-                        <div className="flex flex-col">
-                           <span className="text-[10px] text-blue-500 font-black uppercase tracking-widest">
-                             {clothSubTab.slice(0, -1)} #{idx + 1}
-                           </span>
-                           <span className="text-sm font-bold text-white">{item}</span>
-                        </div>
-                        <i className="fa-solid fa-plus text-[10px] opacity-0 group-hover:opacity-100 transition-opacity text-blue-500"></i>
+                      <button key={idx} onClick={() => handleAiEdit('apply_clothes', item)} className="w-full p-4 rounded-2xl bg-blue-900/10 border border-blue-500/5 text-left text-xs font-bold text-blue-100 hover:bg-blue-900/30">
+                        <span className="text-[10px] text-blue-500 font-black uppercase block">{clothSubTab.slice(0, -1)} #{idx + 1}</span>
+                        <span className="text-sm font-bold text-white">{item}</span>
                       </button>
                     ))}
                   </div>
