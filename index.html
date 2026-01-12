@@ -6,7 +6,22 @@
   <title>Orgeta - Passport Photo Maker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Babel standalone for in-browser transpilation of TSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
   <script>
+    /**
+     * Initialize process.env for the browser environment.
+     * The 'APP_API_KEY_VALUE_PLACEHOLDER' string is replaced during the Netlify build process
+     * by the command defined in netlify.toml.
+     */
+    window.process = {
+      env: {
+        API_KEY: 'APP_API_KEY_VALUE_PLACEHOLDER'
+      }
+    };
+
     // Theme initialization - Defaulting to dark blue
     const savedTheme = localStorage.getItem('theme') || 'dark';
     if (savedTheme === 'dark') {
@@ -82,6 +97,7 @@
 </head>
 <body class="overflow-x-hidden">
   <div id="root"></div>
-  <script type="module" src="/index.tsx"></script>
+  <!-- Using Babel to transpile the TSX entry point directly in the browser -->
+  <script type="text/babel" data-presets="react,typescript" data-type="module" src="index.tsx"></script>
 </body>
 </html>
