@@ -146,27 +146,30 @@ export const editUserPhoto = async (
 
   let prompt = "";
   if (action === 'enhance') {
-    prompt = `Enhance the professional quality of this portrait. 
-    Specific intensity levels:
-    - Sharpness: ${settings?.sharpness || 50}%
-    - Brightness: ${settings?.brightness || 50}%
-    - Contrast: ${settings?.contrast || 50}%
-    Denoise the image, improve skin texture slightly, and sharpen the facial features while maintaining a natural look. Output the enhanced image.`;
+    prompt = `Professional portrait enhancement:
+    1. Adjust Sharpness to ${settings?.sharpness || 50}%, Brightness to ${settings?.brightness || 50}%, and Contrast to ${settings?.contrast || 50}%.
+    2. Reduce digital noise and artifacts.
+    3. Subtly improve skin texture while preserving natural pores and details.
+    4. Sharpen the eyes and facial features for a crisp, professional look.
+    5. Maintain realistic color balance and lighting.`;
   } else if (action === 'remove_bg') {
-    prompt = "Precisely remove the background and replace it with a clean, solid white background suitable for a professional passport photo.";
+    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure, even white (#FFFFFF) background. Ensure sharp and clean edges around the hair and shoulders.";
   } else if (action === 'apply_clothes') {
-    prompt = `Replace the person's current outfit with a high-quality, professional ${itemDescription}. 
-    - The new clothing must be perfectly aligned with the person's neck and shoulders.
-    - It must look like a real, natural photograph, not a digital overlay.
-    - Match the lighting, shadows, and perspective of the original face to the new outfit.
-    - Maintain the person's original facial features, hair, and expression exactly.
-    - Ensure the edges between the neck and the new collar are seamless and photorealistic.
-    - The final output should be a professional passport photo on a plain white background.`;
+    prompt = `Elite professional digital tailoring for official documents:
+    1. Replace the person's current outfit with a high-resolution, perfectly-fitted ${itemDescription}. 
+    2. The new clothing must align seamlessly with the person's original neck and shoulders, maintaining their posture exactly.
+    3. For items including Suits, Blazers, Shirts, Ties, or Bow Ties: Ensure the knot is centered, the collar fits snugly around the neck, and the fabric textures are ultra-sharp.
+    4. Match the exact lighting angle, intensity, and color temperature from the person's face onto the new ${itemDescription} to achieve 100% photorealistic studio quality.
+    5. Ensure the transition between the skin and the collar is soft and natural with realistic contact shadows.
+    6. Preserve the person's original head, hair, and facial features with zero distortion. Fine hair details must be preserved where they overlap with the new clothing.
+    7. The final result must appear as an authentic, single-exposure studio photograph taken for a professional passport or ID.`;
   } else if (action === 'change_bg_color') {
-    prompt = `Remove the current background and replace it with a solid, uniform ${itemDescription} color. 
-    - Ensure a clean, sharp cut around the person's hair (even fine strands) and shoulders.
-    - No color artifacts, fringing, or bleeding from the old background should remain.
-    - Subtly adjust the ambient lighting on the subject's edges to match the new ${itemDescription} background color for a photorealistic look.`;
+    prompt = `Professional studio background modification:
+    1. Remove the existing background completely.
+    2. Replace it with a flat, uniform, solid ${itemDescription} color.
+    3. Perform ultra-precise edge detection around the person, especially preserving fine hair details and shoulder contours.
+    4. Subtly adjust the ambient "rim lighting" or reflections on the person's edges to naturally match the new ${itemDescription} background color.
+    5. There must be no color bleeding or artifacts from the previous background.`;
   }
 
   const response = await ai.models.generateContent({

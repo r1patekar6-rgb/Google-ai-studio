@@ -63,6 +63,12 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
     }
   };
 
+  const resetForm = () => {
+    setTransactionId('');
+    setSelectedFile(null);
+    setFileBase64(null);
+  };
+
   const handleAccessKeyCheck = (val: string) => {
     setAccessKey(val);
     if (val === MASTER_ACCESS_KEY) {
@@ -75,6 +81,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
           remainingUses: 999,
           totalUses: 999
         };
+        resetForm();
         onVerified(dummySub);
       }, 800);
     }
@@ -118,6 +125,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
         };
         
         setIsSyncing(false);
+        resetForm(); // Clear the form on success
         onVerified(subscription);
       } else {
         setError(result.message || t('verify_failed'));

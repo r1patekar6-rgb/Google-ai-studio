@@ -7,25 +7,55 @@
   <title>Orgeta - Passport Photo Maker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    // Theme initialization to prevent flicker
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    :root {
+      --bg-color: #f8fafc;
+      --text-color: #020617;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(59, 130, 246, 0.1);
+    }
+
+    .dark {
+      --bg-color: #020617;
+      --text-color: #f8fafc;
+      --glass-bg: rgba(30, 58, 138, 0.1);
+      --glass-border: rgba(59, 130, 246, 0.2);
+    }
+
     body {
       font-family: 'Inter', sans-serif;
-      background-color: #020617;
-      color: #f8fafc;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
+
     .blue-gradient {
       background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #1d4ed8 100%);
     }
+
     .glass-card {
-      background: rgba(30, 58, 138, 0.1);
+      background: var(--glass-bg);
       backdrop-filter: blur(12px);
-      border: 1px solid rgba(59, 130, 246, 0.2);
+      border: 1px solid var(--glass-border);
+      transition: background 0.3s ease, border 0.3s ease;
     }
+
     .active-tab {
       border-bottom: 2px solid #3b82f6;
       color: #3b82f6;
     }
+
     /* Hide scrollbar for Chrome, Safari and Opera */
     .no-scrollbar::-webkit-scrollbar {
       display: none;
@@ -35,6 +65,10 @@
       -ms-overflow-style: none;  /* IE and Edge */
       scrollbar-width: none;  /* Firefox */
     }
+
+    /* Helper for light mode text adjustments */
+    .dark .text-adaptive { color: #f8fafc; }
+    .text-adaptive { color: #0f172a; }
   </style>
 <script type="importmap">
 {
