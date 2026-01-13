@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "sed -i \"s|APP_API_KEY_VALUE_PLACEHOLDER|${API_KEY}|g\" index.html"
+    "build": "sed -i \"s|APP_API_KEY_VALUE_PLACEHOLDER|${API_KEY}|g\" index.html",
+    "deploy:gcp": "firebase deploy --only hosting --non-interactive"
   }
 }

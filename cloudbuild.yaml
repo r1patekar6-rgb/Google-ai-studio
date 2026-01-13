@@ -1,0 +1,17 @@
+steps:
+  # Step 1: Inject the API Key into index.html using an environment variable
+  - name: 'ubuntu'
+    args: ['sed', '-i', 's|APP_API_KEY_VALUE_PLACEHOLDER|${_API_KEY}|g', 'index.html']
+
+  # Step 2: Deploy to Firebase Hosting
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'deploy:gcp']
+    env:
+      - 'FIREBASE_TOKEN=${_FIREBASE_TOKEN}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+substitutions:
+  _API_KEY: 'your-fallback-key-or-use-secret-manager'
+  _FIREBASE_TOKEN: 'your-firebase-token-from-firebase-login-ci'
