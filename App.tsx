@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Header from './Header';
 import PhotoEditor from './components/PhotoEditor';
 import LayoutReview from './components/LayoutReview';
@@ -99,6 +98,126 @@ const SplashScreen: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   );
 };
 
+const CameraModal: React.FC<{ onClose: () => void; onCapture: (img: string) => void }> = ({ onClose, onCapture }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const startCamera = async () => {
+      try {
+        const s = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } 
+        });
+        setStream(s);
+        if (videoRef.current) videoRef.current.srcObject = s;
+      } catch (err) {
+        setError("Camera access denied. Please check permissions.");
+      }
+    };
+    startCamera();
+    return () => stream?.getTracks().forEach(track => track.stop());
+  }, []);
+
+  const capture = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas');
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(videoRef.current, 0, 0);
+        onCapture(canvas.toDataURL('image/jpeg', 0.95));
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1000] bg-black flex flex-col items-center justify-center p-4">
+      <div className="relative w-full max-w-2xl aspect-[3/4] rounded-[2.5rem] overflow-hidden bg-slate-900 border-2 border-blue-500/30 shadow-2xl">
+        {error ? (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-4">
+            <i className="fa-solid fa-camera-slash text-5xl text-rose-500"></i>
+            <p className="text-white font-black uppercase tracking-widest">{error}</p>
+            <button onClick={onClose} className="px-8 py-3 bg-white/10 rounded-xl text-white font-black text-[10px] uppercase tracking-widest">Close</button>
+          </div>
+        ) : (
+          <>
+            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover scale-x-[-1]" />
+            {/* Passport Face Guide Overlay */}
+            <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+              <div className="w-2/3 aspect-[3/4] border-4 border-dashed border-white/20 rounded-full opacity-40"></div>
+              <div className="absolute bottom-20 text-center">
+                <p className="text-white/60 text-[10px] font-black uppercase tracking-[0.4em]">Align face within guide</p>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      
+      {!error && (
+        <div className="mt-10 flex items-center gap-10">
+          <button onClick={onClose} className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white transition-all">
+            <i className="fa-solid fa-xmark text-2xl"></i>
+          </button>
+          <button onClick={capture} className="w-24 h-24 rounded-full bg-white p-2 shadow-2xl active:scale-90 transition-all">
+            <div className="w-full h-full rounded-full border-4 border-slate-900 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-blue-600"></div>
+            </div>
+          </button>
+          <div className="w-16"></div> {/* Spacer for symmetry */}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const SourceSelector: React.FC<{ onSelect: (source: 'camera' | 'upload') => void; onClose: () => void }> = ({ onSelect, onClose }) => {
+  const { t } = useTranslation();
+  return (
+    <div className="fixed inset-0 z-[1000] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+      <div className="w-full max-w-xl glass-card rounded-[3.5rem] p-10 border-blue-500/20 shadow-3xl space-y-10 animate-in zoom-in-95 duration-500">
+        <div className="text-center space-y-4">
+          <h2 className="text-4xl font-black text-white tracking-tighter">Choose Photo Source</h2>
+          <p className="text-blue-500/60 text-[10px] font-black uppercase tracking-[0.5em]">Studio Grade Capture or Upload</p>
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <button 
+            onClick={() => onSelect('camera')} 
+            className="group flex flex-col items-center gap-6 p-10 rounded-[2.5rem] bg-blue-600/10 border border-blue-500/20 hover:bg-blue-600 hover:border-blue-400 transition-all text-white active:scale-95 shadow-xl hover:shadow-blue-600/30"
+          >
+            <div className="w-20 h-20 rounded-[1.8rem] bg-blue-600 flex items-center justify-center shadow-2xl group-hover:bg-white group-hover:text-blue-600 transition-colors">
+              <i className="fa-solid fa-camera text-4xl"></i>
+            </div>
+            <div className="text-center">
+              <span className="text-xl font-black uppercase tracking-tighter block mb-1">Take Photo</span>
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Use Device Camera</span>
+            </div>
+          </button>
+
+          <button 
+            onClick={() => onSelect('upload')} 
+            className="group flex flex-col items-center gap-6 p-10 rounded-[2.5rem] bg-white/5 border border-white/10 hover:bg-indigo-600 hover:border-indigo-400 transition-all text-white active:scale-95 shadow-xl hover:shadow-indigo-600/30"
+          >
+            <div className="w-20 h-20 rounded-[1.8rem] bg-white/10 flex items-center justify-center shadow-2xl group-hover:bg-white group-hover:text-indigo-600 transition-colors">
+              <i className="fa-solid fa-cloud-arrow-up text-4xl"></i>
+            </div>
+            <div className="text-center">
+              <span className="text-xl font-black uppercase tracking-tighter block mb-1">Upload File</span>
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-40 group-hover:opacity-100">Gallery / Drive</span>
+            </div>
+          </button>
+        </div>
+
+        <button onClick={onClose} className="w-full py-5 text-[10px] font-black text-blue-500/40 uppercase tracking-[0.6em] hover:text-white transition-colors">
+          Cancel Operation
+        </button>
+      </div>
+    </div>
+  );
+};
+
 const AppContent: React.FC = () => {
   const { t, language } = useTranslation();
   const [isSplash, setIsSplash] = useState(true);
@@ -118,6 +237,8 @@ const AppContent: React.FC = () => {
   const [hasDownloaded, setHasDownloaded] = useState<boolean>(false);
   const [downloadQuality, setDownloadQuality] = useState<'Standard' | 'High' | 'Maximum'>('Maximum');
   const [isRendering, setIsRendering] = useState(false);
+  const [showSourceSelector, setShowSourceSelector] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   
   // Auth initialization
   useEffect(() => {
@@ -173,7 +294,6 @@ const AppContent: React.FC = () => {
     localStorage.setItem('bp_user', JSON.stringify(updatedUser));
   };
 
-  // Fix: Added missing handleVerificationSuccess function to update user subscription state
   const handleVerificationSuccess = (subscription: Subscription) => {
     setIsUnlocked(true);
     if (user) {
@@ -183,7 +303,6 @@ const AppContent: React.FC = () => {
       };
       handleUpdateUser(updatedUser);
 
-      // Also ensure the user ledger is updated with the new subscription
       try {
         const userLedger = JSON.parse(localStorage.getItem('bp_user_ledger') || '[]');
         const updatedLedger = userLedger.map((u: User) => u.email === user.email ? updatedUser : u);
@@ -200,6 +319,8 @@ const AppContent: React.FC = () => {
     setEditedPhoto(null);
     setIsUnlocked(false);
     setHasDownloaded(false);
+    setShowSourceSelector(false);
+    setShowCamera(false);
   };
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -210,15 +331,32 @@ const AppContent: React.FC = () => {
         setUserPhoto(reader.result as string);
         setEditedPhoto(null);
         setStep('editor');
+        setShowSourceSelector(false);
       };
       reader.readAsDataURL(file);
     }
   };
 
+  const handleCameraCapture = (img: string) => {
+    setUserPhoto(img);
+    setEditedPhoto(null);
+    setStep('editor');
+    setShowCamera(false);
+    setShowSourceSelector(false);
+  };
+
   const selectPlan = (amount: number) => {
     setSelectedAmount(amount);
-    const input = document.getElementById('main-upload') as HTMLInputElement;
-    input?.click();
+    setShowSourceSelector(true);
+  };
+
+  const handleSourceSelect = (source: 'camera' | 'upload') => {
+    if (source === 'camera') {
+      setShowCamera(true);
+    } else {
+      const input = document.getElementById('main-upload') as HTMLInputElement;
+      input?.click();
+    }
   };
 
   const currentPhotoCount = activePricing.find(p => p.amount === selectedAmount)?.photos || activeBulk.find(p => p.amount === selectedAmount)?.amount || 21;
@@ -364,13 +502,6 @@ const AppContent: React.FC = () => {
                 {t('login')}
               </button>
             </div>
-            
-            <div className="pt-20 grid grid-cols-2 md:grid-cols-4 gap-8 opacity-30">
-               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-passport text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">Global Sizes</span></div>
-               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-shirt text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">AI Outfits</span></div>
-               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-wand-magic-sparkles text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">HD Enhance</span></div>
-               <div className="flex flex-col items-center gap-2"><i className="fa-solid fa-file-pdf text-3xl"></i><span className="text-[10px] font-black uppercase tracking-widest">Print Ready</span></div>
-            </div>
           </div>
         </main>
       </div>
@@ -382,6 +513,9 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#000000]">
       <Header onHome={resetToHome} user={user} onLogout={handleLogout} onUpdateUser={handleUpdateUser} />
+      
+      {showSourceSelector && <SourceSelector onSelect={handleSourceSelect} onClose={() => setShowSourceSelector(false)} />}
+      {showCamera && <CameraModal onCapture={handleCameraCapture} onClose={() => setShowCamera(false)} />}
       
       <main className="flex-grow container mx-auto px-6 py-12">
         {step === 'home' && (
@@ -547,14 +681,6 @@ const AppContent: React.FC = () => {
                     </div>
                   </button>
                 </div>
-
-                <div className="flex flex-col items-center gap-8 pt-10 border-t border-white/5">
-                   <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.8em]">TECHNICAL SUPPORT</p>
-                   <a href={`https://wa.me/91${COMPLAINT_WHATSAPP}`} target="_blank" className="flex items-center gap-5 px-10 py-5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10 group">
-                    <i className="fa-brands fa-whatsapp text-emerald-500 text-2xl group-hover:scale-125 transition-transform"></i>
-                    <span className="text-sm font-black text-white/70 uppercase tracking-widest">Chat with Assistant</span>
-                   </a>
-                </div>
               </div>
             )}
           </div>
@@ -572,12 +698,6 @@ const AppContent: React.FC = () => {
           <p className="text-[10px] font-black text-white/10 uppercase tracking-[0.5em]">
             &copy; 2025 ORGETA STUDIO • POWERED BY GEMINI AI • MADE FOR THE WORLD
           </p>
-          <div className="flex justify-center gap-10 opacity-10">
-            <i className="fa-brands fa-cc-visa text-3xl"></i>
-            <i className="fa-brands fa-cc-mastercard text-3xl"></i>
-            <i className="fa-brands fa-google-pay text-4xl"></i>
-            <i className="fa-brands fa-apple-pay text-4xl"></i>
-          </div>
         </div>
       </footer>
 

@@ -66,6 +66,14 @@ const CLOTHING_CATEGORIES = {
   ]
 };
 
+const ASPECT_PRESETS = [
+  { label: 'Auto', value: null, icon: 'fa-wand-magic-sparkles' },
+  { label: '1:1', value: 1, icon: 'fa-square' },
+  { label: '3.5:4.5', value: 3.5 / 4.5, icon: 'fa-passport' },
+  { label: '2:3', value: 2 / 3, icon: 'fa-rectangle-portrait' },
+  { label: '3:4', value: 3 / 4, icon: 'fa-id-card' }
+];
+
 const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, onConfigChange, onComplete }) => {
   const { t } = useTranslation();
   const [isCropping, setIsCropping] = useState(true);
@@ -78,6 +86,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
   const [activeTab, setActiveTab] = useState<'ai' | 'clothes'>('clothes');
   const [clothSubTab, setClothSubTab] = useState<keyof typeof CLOTHING_CATEGORIES>('Suits');
   const [selectedBgColor, setSelectedBgColor] = useState('#FFFFFF');
+  const [customAspect, setCustomAspect] = useState<number | null>(null);
   
   const [enhanceSettings, setEnhanceSettings] = useState({
     sharpness: 50,
@@ -87,10 +96,10 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const previewRef = useRef<HTMLDivElement>(null);
 
   const photoDim = PHOTO_DIMENSIONS[config.size];
-  const aspect = photoDim.width / photoDim.height;
+  const defaultAspect = photoDim.width / photoDim.height;
+  const currentAspect = customAspect !== null ? customAspect : defaultAspect;
 
   const addToHistory = (newImg: string, isResult: boolean) => {
     const newEntry: HistoryEntry = { image: newImg, isCropped: isResult };
@@ -198,12 +207,91 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
             </div>
           </div>
 
-          <div className="relative aspect-square md:aspect-[4/3] w-full rounded-[3rem] overflow-hidden bg-slate-900 border-2 border-blue-500/20 shadow-2xl flex items-center justify-center">
-            {isCropping ? (
-              <Cropper image={baseImage} crop={crop} zoom={zoom} aspect={aspect} onCropChange={setCrop} onCropComplete={(_, p) => setCroppedAreaPixels(p)} onZoomChange={setZoom} />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center p-8 bg-grid-white/[0.02]">
-                <img src={croppedImage!} alt="Edited" className="max-h-full rounded-2xl shadow-2xl border-4 border-white transition-all duration-1000 ease-out animate-in zoom-in-95" />
+          <div className="flex flex-col gap-6">
+            <div className="relative aspect-square md:aspect-[4/3] w-full rounded-[3rem] overflow-hidden bg-slate-900 border-2 border-blue-500/20 shadow-2xl flex items-center justify-center">
+              {isCropping ? (
+                <Cropper 
+                  image={baseImage} 
+                  crop={crop} 
+                  zoom={zoom} 
+                  aspect={currentAspect} 
+                  onCropChange={setCrop} 
+                  onCropComplete={(_, p) => setCroppedAreaPixels(p)} 
+                  onZoomChange={setZoom} 
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-8 bg-grid-white/[0.02]">
+                  <img src={croppedImage!} alt="Edited" className="max-h-full rounded-2xl shadow-2xl border-4 border-white transition-all duration-1000 ease-out animate-in zoom-in-95" />
+                </div>
+              )}
+            </div>
+
+            {isCropping && (
+              <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
+                {/* Aspect Ratio Presets */}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 px-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Aspect Ratio Presets</h4>
+                  </div>
+                  <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+                    {ASPECT_PRESETS.map((preset) => (
+                      <button
+                        key={preset.label}
+                        onClick={() => setCustomAspect(preset.value)}
+                        className={`flex-shrink-0 flex items-center gap-2.5 px-6 py-3.5 rounded-2xl border font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 ${
+                          (customAspect === preset.value)
+                          ? 'bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-600/20'
+                          : 'bg-blue-900/20 border-blue-500/10 text-blue-400 hover:border-blue-500/40 hover:bg-blue-600/10'
+                        }`}
+                      >
+                        <i className={`fa-solid ${preset.icon} ${customAspect === preset.value ? 'text-white' : 'text-blue-500/60'}`}></i>
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fine-Tuning Zoom Controls */}
+                <div className="space-y-4 p-6 bg-blue-900/10 border border-blue-500/10 rounded-[2.5rem] backdrop-blur-md">
+                   <div className="flex items-center justify-between px-1">
+                      <div className="flex items-center gap-3">
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                        <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-[0.4em]">Precision Zoom Control</h4>
+                      </div>
+                      <button 
+                        onClick={() => setZoom(1)}
+                        className="px-4 py-1.5 rounded-full bg-blue-950/60 border border-blue-500/20 text-[9px] font-black text-blue-500 uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all active:scale-90"
+                      >
+                        <i className="fa-solid fa-rotate-left mr-2"></i> Reset Zoom
+                      </button>
+                   </div>
+                   
+                   <div className="flex items-center gap-6">
+                      <i className="fa-solid fa-magnifying-glass-minus text-blue-500/40"></i>
+                      <div className="flex-grow relative flex items-center">
+                        <input 
+                          type="range" 
+                          min={1} 
+                          max={3} 
+                          step={0.01} 
+                          value={zoom} 
+                          onChange={(e) => setZoom(parseFloat(e.target.value))}
+                          className="w-full accent-blue-500 bg-blue-950 rounded-full h-2 appearance-none cursor-pointer" 
+                        />
+                        <div className="absolute -bottom-6 left-0 right-0 flex justify-between px-1">
+                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">1.0x</span>
+                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">2.0x</span>
+                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">3.0x</span>
+                        </div>
+                      </div>
+                      <i className="fa-solid fa-magnifying-glass-plus text-blue-500"></i>
+                   </div>
+                   
+                   <div className="pt-2 text-center">
+                      <span className="text-xl font-black text-white tracking-tighter tabular-nums">{zoom.toFixed(2)}x</span>
+                   </div>
+                </div>
               </div>
             )}
           </div>
