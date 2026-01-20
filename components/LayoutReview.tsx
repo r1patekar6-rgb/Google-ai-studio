@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { PhotoConfig, PaperLayout } from '../types';
 import { PHOTO_DIMENSIONS, PAPER_DIMENSIONS } from '../constants';
 import { useTranslation } from './TranslationContext';
@@ -17,16 +16,28 @@ const LayoutReview: React.FC<LayoutReviewProps> = ({ image, config, photoCount, 
   const previewRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [currentPage, setCurrentPage] = useState(0);
+  const [imageRatio, setImageRatio] = useState(1);
   
   const paperDim = PAPER_DIMENSIONS[config.layout];
-  const photoDim = PHOTO_DIMENSIONS[config.size];
+  const photoStandard = PHOTO_DIMENSIONS[config.size];
+
+  // Detect the actual aspect ratio of the edited photo
+  useEffect(() => {
+    const img = new Image();
+    img.src = image;
+    img.onload = () => setImageRatio(img.width / img.height);
+  }, [image]);
   
   const gap = 1.5; 
   const padding = 8; 
   
+  // Calculate slot dimensions based on chosen standard width and actual image aspect ratio
+  const slotWidth = photoStandard.width;
+  const slotHeight = slotWidth / imageRatio;
+  
   const effectiveWidth = paperDim.width - (padding * 2);
-  const cols = Math.floor((effectiveWidth + gap) / (photoDim.width + gap));
-  const rows = Math.floor(((paperDim.height - (padding * 2)) + gap) / (photoDim.height + gap));
+  const cols = Math.floor((effectiveWidth + gap) / (slotWidth + gap));
+  const rows = Math.floor(((paperDim.height - (padding * 2)) + gap) / (slotHeight + gap));
   const photosPerPage = cols * rows;
   const totalPages = Math.ceil(photoCount / photosPerPage);
 
@@ -56,9 +67,27 @@ const LayoutReview: React.FC<LayoutReviewProps> = ({ image, config, photoCount, 
         </div>
 
         <div className="relative flex-grow rounded-[2.5rem] border-2 border-blue-500/20 bg-slate-950 shadow-2xl flex items-center justify-center p-8 overflow-hidden group">
-          <div ref={previewRef} className="bg-white shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative" style={{ width: `${paperDim.width}mm`, height: `${paperDim.height}mm`, transform: `scale(${scale})`, display: 'grid', gridTemplateColumns: `repeat(${cols}, ${photoDim.width}mm)`, gap: `${gap}mm`, padding: `${padding}mm`, alignContent: 'flex-start', justifyContent: 'center', boxSizing: 'border-box' }}>
+          <div ref={previewRef} className="bg-white shadow-[0_50px_100px_rgba(0,0,0,0.8)] relative" style={{ 
+            width: `${paperDim.width}mm`, 
+            height: `${paperDim.height}mm`, 
+            transform: `scale(${scale})`, 
+            display: 'grid', 
+            gridTemplateColumns: `repeat(${cols}, ${slotWidth}mm)`, 
+            gap: `${gap}mm`, 
+            padding: `${padding}mm`, 
+            alignContent: 'flex-start', 
+            justifyContent: 'center', 
+            boxSizing: 'border-box' 
+          }}>
             {Array.from({ length: Math.min(photosPerPage, photoCount - (currentPage * photosPerPage)) }).map((_, i) => (
-              <div key={i} style={{ width: `${photoDim.width}mm`, height: `${photoDim.height}mm`, backgroundImage: `url(${image})`, backgroundSize: 'cover', backgroundPosition: 'center', boxShadow: '0 0.5mm 1mm rgba(0,0,0,0.1)' }} />
+              <div key={i} style={{ 
+                width: `${slotWidth}mm`, 
+                height: `${slotHeight}mm`, 
+                backgroundImage: `url(${image})`, 
+                backgroundSize: '100% 100%', 
+                backgroundPosition: 'center', 
+                boxShadow: '0 0.5mm 1mm rgba(0,0,0,0.1)' 
+              }} />
             ))}
           </div>
         </div>

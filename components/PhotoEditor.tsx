@@ -67,11 +67,10 @@ const CLOTHING_CATEGORIES = {
 };
 
 const ASPECT_PRESETS = [
-  { label: 'Auto', value: null, icon: 'fa-wand-magic-sparkles' },
-  { label: '1:1', value: 1, icon: 'fa-square' },
-  { label: '3.5:4.5', value: 3.5 / 4.5, icon: 'fa-passport' },
-  { label: '2:3', value: 2 / 3, icon: 'fa-rectangle-portrait' },
-  { label: '3:4', value: 3 / 4, icon: 'fa-id-card' }
+  { label: '3.5:4.5', sub: 'IN / UK / EU', value: 3.5 / 4.5, icon: 'fa-passport' },
+  { label: '1:1', sub: 'US / Visa', value: 1, icon: 'fa-square' },
+  { label: '2:3', sub: 'Standard Visa', value: 2 / 3, icon: 'fa-rectangle-portrait' },
+  { label: '3:4', sub: 'ID Card / Badge', value: 3 / 4, icon: 'fa-id-card' }
 ];
 
 const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, onConfigChange, onComplete }) => {
@@ -86,8 +85,12 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
   const [activeTab, setActiveTab] = useState<'ai' | 'clothes'>('clothes');
   const [clothSubTab, setClothSubTab] = useState<keyof typeof CLOTHING_CATEGORIES>('Suits');
   const [selectedBgColor, setSelectedBgColor] = useState('#FFFFFF');
-  const [customAspect, setCustomAspect] = useState<number | null>(null);
   
+  const photoDim = PHOTO_DIMENSIONS[config.size];
+  const defaultAspect = photoDim.width / photoDim.height;
+  const [customAspect, setCustomAspect] = useState<number | null>(defaultAspect);
+  const currentAspect = customAspect !== null ? customAspect : defaultAspect;
+
   const [enhanceSettings, setEnhanceSettings] = useState({
     sharpness: 50,
     brightness: 50,
@@ -96,10 +99,6 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-
-  const photoDim = PHOTO_DIMENSIONS[config.size];
-  const defaultAspect = photoDim.width / photoDim.height;
-  const currentAspect = customAspect !== null ? customAspect : defaultAspect;
 
   const addToHistory = (newImg: string, isResult: boolean) => {
     const newEntry: HistoryEntry = { image: newImg, isCropped: isResult };
@@ -137,13 +136,22 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
 
   const handleCropSave = async () => {
     if (croppedAreaPixels) {
-      const cropped = await getCroppedImg(baseImage, croppedAreaPixels);
+      const source = croppedImage || baseImage;
+      const cropped = await getCroppedImg(source, croppedAreaPixels);
       if (cropped) {
         setCroppedImage(cropped);
         setIsCropping(false);
         addToHistory(cropped, true);
       }
     }
+  };
+
+  const handleStartCrop = () => {
+    // If we have an edited photo, use it as the new base for cropping
+    if (croppedImage) {
+      setBaseImage(croppedImage);
+    }
+    setIsCropping(true);
   };
 
   const createImage = (url: string): Promise<HTMLImageElement> =>
@@ -163,7 +171,7 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
     canvas.width = pixelCrop.width;
     canvas.height = pixelCrop.height;
     ctx.drawImage(img, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height);
-    return canvas.toDataURL('image/jpeg');
+    return canvas.toDataURL('image/jpeg', 0.95);
   };
 
   return (
@@ -200,8 +208,8 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                 <i className="fa-solid fa-rotate-left"></i>
               </button>
               {!isCropping && (
-                <button onClick={() => setIsCropping(true)} className="px-5 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-500/20 hover:bg-blue-500/20 transition-all">
-                  {t('re_crop')}
+                <button onClick={handleStartCrop} className="px-5 py-2.5 bg-blue-500/10 text-blue-400 rounded-xl text-[10px] font-black uppercase tracking-widest border border-blue-500/20 hover:bg-blue-500/20 transition-all">
+                  <i className="fa-solid fa-crop-simple mr-2"></i> Adjust Crop
                 </button>
               )}
             </div>
@@ -228,31 +236,34 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
 
             {isCropping && (
               <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500">
-                {/* Aspect Ratio Presets */}
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center gap-3 px-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
-                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Aspect Ratio Presets</h4>
+                    <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Select Portrait Format</h4>
                   </div>
-                  <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {ASPECT_PRESETS.map((preset) => (
                       <button
                         key={preset.label}
                         onClick={() => setCustomAspect(preset.value)}
-                        className={`flex-shrink-0 flex items-center gap-2.5 px-6 py-3.5 rounded-2xl border font-black text-[11px] uppercase tracking-widest transition-all active:scale-95 ${
+                        className={`flex flex-col items-center gap-2 p-4 rounded-3xl border transition-all active:scale-95 ${
                           (customAspect === preset.value)
                           ? 'bg-blue-600 border-blue-400 text-white shadow-xl shadow-blue-600/20'
-                          : 'bg-blue-900/20 border-blue-500/10 text-blue-400 hover:border-blue-500/40 hover:bg-blue-600/10'
+                          : 'bg-blue-900/10 border-blue-500/10 text-blue-400/80 hover:border-blue-500/40 hover:bg-blue-600/10'
                         }`}
                       >
-                        <i className={`fa-solid ${preset.icon} ${customAspect === preset.value ? 'text-white' : 'text-blue-500/60'}`}></i>
-                        {preset.label}
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-1 transition-colors ${customAspect === preset.value ? 'bg-white/20 text-white' : 'bg-blue-950/40 text-blue-500/60'}`}>
+                           <i className={`fa-solid ${preset.icon} text-lg`}></i>
+                        </div>
+                        <div className="text-center">
+                           <p className="text-xs font-black uppercase tracking-tight">{preset.label}</p>
+                           <p className={`text-[8px] font-black uppercase tracking-widest mt-0.5 ${customAspect === preset.value ? 'text-white/60' : 'text-blue-500/40'}`}>{preset.sub}</p>
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Fine-Tuning Zoom Controls */}
                 <div className="space-y-4 p-6 bg-blue-900/10 border border-blue-500/10 rounded-[2.5rem] backdrop-blur-md">
                    <div className="flex items-center justify-between px-1">
                       <div className="flex items-center gap-3">
@@ -279,16 +290,10 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                           onChange={(e) => setZoom(parseFloat(e.target.value))}
                           className="w-full accent-blue-500 bg-blue-950 rounded-full h-2 appearance-none cursor-pointer" 
                         />
-                        <div className="absolute -bottom-6 left-0 right-0 flex justify-between px-1">
-                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">1.0x</span>
-                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">2.0x</span>
-                           <span className="text-[8px] font-black text-blue-500/40 uppercase tracking-widest">3.0x</span>
-                        </div>
                       </div>
                       <i className="fa-solid fa-magnifying-glass-plus text-blue-500"></i>
                    </div>
-                   
-                   <div className="pt-2 text-center">
+                   <div className="text-center">
                       <span className="text-xl font-black text-white tracking-tighter tabular-nums">{zoom.toFixed(2)}x</span>
                    </div>
                 </div>
@@ -311,6 +316,24 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
             <div className="p-8 flex-grow overflow-y-auto no-scrollbar space-y-8">
               {activeTab === 'ai' ? (
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                  <div className="grid grid-cols-1 gap-4">
+                    <button onClick={handleStartCrop} className="p-6 rounded-[2.5rem] bg-blue-600/10 border border-blue-500/20 flex items-center gap-5 hover:bg-blue-600/20 transition-all text-left group">
+                      <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-2xl group-hover:scale-110 transition-transform"><i className="fa-solid fa-crop-simple text-2xl"></i></div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest">Crop & Align</span>
+                        <span className="text-xs font-bold text-white opacity-60">Prepare for Print Grid</span>
+                      </div>
+                    </button>
+                    
+                    <button onClick={() => handleAiEdit('remove_bg')} className="p-6 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-5 hover:bg-emerald-500/20 transition-all text-left group">
+                      <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-2xl group-hover:scale-110 transition-transform"><i className="fa-solid fa-user-check text-2xl"></i></div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{t('remove_bg')}</span>
+                        <span className="text-xs font-bold text-white opacity-60">Clean Studio White</span>
+                      </div>
+                    </button>
+                  </div>
+
                   <div className="space-y-6 p-7 bg-blue-900/10 rounded-[2.5rem] border border-blue-500/10">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white shadow-xl"><i className="fa-solid fa-wand-magic-sparkles text-xl"></i></div>
@@ -348,32 +371,11 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                     </button>
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4">
-                    <button onClick={() => handleAiEdit('remove_bg')} className="p-6 rounded-[2.5rem] bg-emerald-500/10 border border-emerald-500/20 flex items-center gap-5 hover:bg-emerald-500/20 transition-all text-left group">
-                      <div className="w-14 h-14 rounded-2xl bg-emerald-600 flex items-center justify-center text-white shadow-2xl group-hover:scale-110 transition-transform"><i className="fa-solid fa-user-check text-2xl"></i></div>
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">{t('remove_bg')}</span>
-                        <span className="text-xs font-bold text-white opacity-60">Clean Studio White</span>
-                      </div>
-                    </button>
-                  </div>
-
-                  {/* Photo Standard Selection */}
                   <div className="pt-8 border-t border-blue-500/10 space-y-6">
                     <h4 className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.4em]">{t('output_standard')}</h4>
                     <div className="grid grid-cols-2 gap-3">
                       {Object.values(PhotoSize).map(s => (
                         <button key={s} onClick={() => onConfigChange({...config, size: s})} className={`px-4 py-4 rounded-2xl text-[10px] font-black tracking-widest border transition-all ${config.size === s ? 'bg-blue-600 border-blue-400 text-white shadow-xl' : 'bg-blue-900/10 text-blue-400 border-blue-500/10 hover:border-blue-500/40'}`}>{s.split(' (')[0].toUpperCase()}</button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Paper Layout Selection */}
-                  <div className="pt-8 border-t border-blue-500/10 space-y-6">
-                    <h4 className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.4em]">{t('paper_layout')}</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {Object.values(PaperLayout).map(l => (
-                        <button key={l} onClick={() => onConfigChange({...config, layout: l})} className={`px-4 py-4 rounded-2xl text-[10px] font-black tracking-widest border transition-all ${config.layout === l ? 'bg-blue-600 border-blue-400 text-white shadow-xl' : 'bg-blue-900/10 text-blue-400 border-blue-500/10 hover:border-blue-500/40'}`}>{l.split(' (')[0].toUpperCase()}</button>
                       ))}
                     </div>
                   </div>
@@ -405,29 +407,6 @@ const PhotoEditor: React.FC<PhotoEditorProps> = ({ image, config, photoCount, on
                             <span className="text-[10px] font-black text-white uppercase tracking-widest truncate text-center">{bg.name}</span>
                           </button>
                         ))}
-                      </div>
-
-                      <div className="p-7 bg-blue-900/10 rounded-[3rem] border border-blue-500/10 space-y-6">
-                        <h4 className="text-[10px] font-black text-blue-500 uppercase tracking-widest flex items-center gap-3">
-                          <i className="fa-solid fa-palette text-blue-400"></i> Custom Studio Color
-                        </h4>
-                        <div className="flex items-center gap-5 bg-blue-950/60 p-6 rounded-[1.8rem] border border-blue-500/10 group cursor-pointer hover:bg-blue-950 transition-colors">
-                          <div className="relative w-16 h-16 rounded-2xl overflow-hidden shadow-2xl border border-white/10 flex-shrink-0">
-                            <input 
-                              type="color" 
-                              value={selectedBgColor} 
-                              onBlur={(e) => handleAiEdit('change_bg_color', e.target.value)}
-                              onChange={(e) => setSelectedBgColor(e.target.value)} 
-                              className="absolute -inset-6 w-32 h-32 cursor-pointer bg-transparent border-none appearance-none"
-                            />
-                          </div>
-                          <div className="flex flex-col flex-grow">
-                            <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest mb-1">Select Hue</span>
-                            <span className="text-xl font-black text-white uppercase tracking-tighter tabular-nums">{selectedBgColor}</span>
-                          </div>
-                          <i className="fa-solid fa-chevron-right text-blue-500/30 group-hover:text-blue-500 group-hover:translate-x-1 transition-all"></i>
-                        </div>
-                        <p className="text-[9px] text-blue-500/40 font-black text-center uppercase tracking-[0.3em]">Selection applies instantly</p>
                       </div>
                     </div>
                   ) : (

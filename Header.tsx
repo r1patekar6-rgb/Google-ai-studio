@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useTranslation } from './components/TranslationContext';
 import { COMPLAINT_WHATSAPP } from './constants';
 import { User } from './types';
-import ProfileModal from './components/ProfileModal';
 
 interface Language {
   name: string;
@@ -56,11 +55,10 @@ interface HeaderProps {
   onLogin?: () => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ onHome, user, onLogout, onUpdateUser, onSignUp, onLogin }) => {
+const Header: React.FC<HeaderProps> = ({ onHome }) => {
   const { language: selectedLanguage, setLanguage, t } = useTranslation();
   const [showLanguages, setShowLanguages] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [langSearchQuery, setLangSearchQuery] = useState('');
   
   const languageRef = useRef<HTMLDivElement>(null);
@@ -104,12 +102,6 @@ const Header: React.FC<HeaderProps> = ({ onHome, user, onLogout, onUpdateUser, o
 
   const handleComplaint = () => {
     const msg = encodeURIComponent("Hi Orgeta Support, I have a complaint regarding my session.");
-    window.open(`https://wa.me/91${COMPLAINT_WHATSAPP}?text=${msg}`, '_blank');
-    setShowSettings(false);
-  };
-
-  const handleFeedback = () => {
-    const msg = encodeURIComponent("Hi Orgeta Team, I'd like to provide some feedback about the app.");
     window.open(`https://wa.me/91${COMPLAINT_WHATSAPP}?text=${msg}`, '_blank');
     setShowSettings(false);
   };
@@ -188,99 +180,33 @@ const Header: React.FC<HeaderProps> = ({ onHome, user, onLogout, onUpdateUser, o
         </div>
 
         <div className="flex items-center gap-3">
-          {user ? (
-            <div className="flex items-center gap-3 relative">
-              <button 
-                onClick={() => { onHome(); setShowSettings(false); }}
-                className="hidden md:flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 border border-blue-400/20 shadow-blue-600/20"
-              >
-                <i className="fa-solid fa-bolt"></i>
-                Top Up
-              </button>
+          <button 
+            onClick={() => setShowSettings(!showSettings)}
+            className={`w-10 h-10 flex items-center justify-center rounded-xl bg-blue-900/20 hover:bg-blue-600/30 border border-blue-500/20 text-blue-500 transition-all ${showSettings ? 'bg-blue-600/20' : ''}`}
+          >
+            <i className={`fa-solid fa-gear text-lg transition-transform duration-300 ${showSettings ? 'rotate-90' : ''}`}></i>
+          </button>
 
-              <button 
-                onClick={() => setShowProfile(true)}
-                className="flex items-center gap-3 bg-blue-500/10 px-4 py-2 rounded-full border border-blue-500/20 hover:bg-blue-500/20 transition-all group"
-              >
-                 <div className="w-8 h-8 rounded-full bg-blue-600 overflow-hidden flex items-center justify-center text-[12px] font-black text-white border border-blue-400/30 shadow-lg">
-                   {user.profileImage ? (
-                     <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                   ) : (
-                     user.name.charAt(0).toUpperCase()
-                   )}
-                 </div>
-                 <div className="hidden sm:flex flex-col items-start leading-none">
-                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-tighter mb-0.5">{t('welcome')}</span>
-                    <span className="text-xs font-black text-white uppercase tracking-tighter truncate max-w-[80px]">{user.name.split(' ')[0]}</span>
-                 </div>
-              </button>
-              
-              <button 
-                onClick={() => setShowSettings(!showSettings)}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl bg-blue-900/20 hover:bg-blue-600/30 border border-blue-500/20 text-blue-500 transition-all ${showSettings ? 'bg-blue-600/20' : ''}`}
-              >
-                <i className={`fa-solid fa-gear text-lg transition-transform duration-300 ${showSettings ? 'rotate-90' : ''}`}></i>
-              </button>
-
-              {showSettings && (
-                <div ref={settingsRef} className="absolute right-0 top-14 w-64 rounded-[2rem] bg-blue-950/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="p-2 space-y-1">
-                    <button onClick={() => { onHome(); setShowSettings(false); }} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-blue-600/20 text-left transition-colors text-blue-400 group">
-                      <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-all"><i className="fa-solid fa-bolt"></i></div>
-                      <span className="text-sm font-black uppercase tracking-tighter">Top Up Credits</span>
-                    </button>
-                    <button onClick={() => { setShowProfile(true); setShowSettings(false); }} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-blue-600/20 text-left transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400"><i className="fa-solid fa-user"></i></div>
-                      <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">My Profile</span>
-                    </button>
-                    <div className="h-px bg-blue-500/10 my-1"></div>
-                    <button onClick={handleShare} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-blue-600/20 text-left transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400"><i className="fa-solid fa-share-nodes"></i></div>
-                      <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Share Website</span>
-                    </button>
-                    <button onClick={handleComplaint} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-rose-600/20 text-left transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400"><i className="fa-brands fa-whatsapp text-lg"></i></div>
-                      <div className="flex flex-col">
-                        <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Complaint</span>
-                        <span className="text-[8px] font-bold text-rose-500 uppercase">MSG ONLY: 9823818455</span>
-                      </div>
-                    </button>
-                    <button onClick={handleFeedback} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-emerald-600/20 text-left transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400"><i className="fa-solid fa-comment-dots"></i></div>
-                      <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Feedback</span>
-                    </button>
-                    <div className="h-px bg-blue-500/10 my-1"></div>
-                    <button onClick={onLogout} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-rose-600/20 text-left transition-colors">
-                      <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400"><i className="fa-solid fa-right-from-bracket"></i></div>
-                      <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">{t('logout')}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-               <button onClick={onLogin} className="hidden sm:block text-xs font-black uppercase tracking-widest text-blue-500 hover:text-white transition-colors">
-                {t('login')}
-              </button>
-               <button onClick={onSignUp} className="text-xs font-black uppercase tracking-widest px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-full text-white shadow-lg transition-all active:scale-95 border border-blue-400/20 shadow-blue-600/20">
-                {t('sign_up')}
-              </button>
+          {showSettings && (
+            <div ref={settingsRef} className="absolute right-0 top-14 w-64 rounded-[2rem] bg-blue-950/95 backdrop-blur-xl border border-blue-500/30 shadow-2xl overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="p-2 space-y-1">
+                <button onClick={handleShare} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-blue-600/20 text-left transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400"><i className="fa-solid fa-share-nodes"></i></div>
+                  <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Share Website</span>
+                </button>
+                <button onClick={handleComplaint} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-rose-600/20 text-left transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400"><i className="fa-brands fa-whatsapp text-lg"></i></div>
+                  <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Support</span>
+                </button>
+                <button onClick={onHome} className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl hover:bg-emerald-600/20 text-left transition-colors">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400"><i className="fa-solid fa-house"></i></div>
+                  <span className="text-sm font-black text-blue-50 uppercase tracking-tighter">Home</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
-
-      {showProfile && user && (
-        <ProfileModal 
-          user={user} 
-          onClose={() => setShowProfile(false)} 
-          onUpdate={(updated) => {
-            onUpdateUser(updated);
-            setShowProfile(false);
-          }} 
-        />
-      )}
     </header>
   );
 };

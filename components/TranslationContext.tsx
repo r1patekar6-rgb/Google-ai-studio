@@ -48,8 +48,8 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
   const translateUI = async (targetLang: string) => {
     setIsTranslating(true);
     try {
-      const apiKey = (window as any).process?.env?.API_KEY || '';
-      const ai = new GoogleGenAI({ apiKey });
+      // Fix: Corrected GoogleGenAI initialization to use process.env.API_KEY directly
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const baseStrings = TRANSLATIONS['English (US)'] as Record<string, string>;
       
       const schemaProperties: Record<string, any> = {};
@@ -79,6 +79,7 @@ export const TranslationProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
       });
 
+      // Fix: Use response.text property directly
       let responseText = response.text || '{}';
       
       if (responseText.includes('```json')) {

@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from './TranslationContext';
 import { PAY_NUMBER, RECIPIENT_NAME, UPI_ID, REPORT_EMAIL } from '../constants';
 import { verifyPaymentScreenshot, sendPaymentNotification, logTransactionToLedger } from '../services/geminiService';
-import { User, Subscription } from '../types';
+import { User, Subscription, VerificationStatus } from '../types';
 
 interface PaymentVerificationProps {
   onVerified: (subscription: Subscription) => void;
@@ -25,22 +26,16 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
   const [accessKey, setAccessKey] = useState('');
   const [showKeySuccess, setShowKeySuccess] = useState(false);
 
-  const MASTER_ACCESS_KEY = 'punaji@ivki';
+  const MASTER_ACCESS_KEY = 'RED@10';
 
   useEffect(() => {
     if (isUnlocked || isExpired) return;
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          setIsExpired(true);
-          return 0;
-        }
+        if (prev <= 1) { clearInterval(timer); setIsExpired(true); return 0; }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
   }, [isUnlocked, isExpired]);
 
@@ -55,9 +50,7 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
     if (file) {
       setSelectedFile(file);
       const reader = new FileReader();
-      reader.onload = () => {
-        setFileBase64(reader.result as string);
-      };
+      reader.onload = () => setFileBase64(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
@@ -66,12 +59,14 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
     setTransactionId('');
     setSelectedFile(null);
     setFileBase64(null);
+    setAccessKey('');
   };
 
-  const handleAccessKeyCheck = (val: string) => {
-    setAccessKey(val);
-    if (val === MASTER_ACCESS_KEY) {
+  const handleManualUnlock = () => {
+    const cleanVal = accessKey.trim();
+    if (cleanVal.toUpperCase() === MASTER_ACCESS_KEY.toUpperCase()) {
       setShowKeySuccess(true);
+      setError(null);
       setTimeout(() => {
         const dummySub: Subscription = {
           planAmount: amount,
@@ -82,219 +77,136 @@ const PaymentVerification: React.FC<PaymentVerificationProps> = ({ onVerified, i
         };
         resetForm();
         onVerified(dummySub);
-      }, 800);
-    }
-  };
-
-  const handleVerify = async () => {
-    if (!fileBase64 || !transactionId) {
-      setError("Please provide both the screenshot and the Transaction ID.");
-      return;
-    }
-
-    setIsVerifying(true);
-    setError(null);
-
-    try {
-      const result = await verifyPaymentScreenshot(fileBase64, transactionId);
-      if (result.status === 'SUCCESS') {
-        setIsSyncing(true);
-        
-        // Log to local ledger for monthly reporting
-        logTransactionToLedger(amount, transactionId, currencyCode);
-
-        // Auto-send the individual record to the owner's email
-        await sendPaymentNotification({
-          type: 'INDIVIDUAL_PAYMENT',
-          screenshot: fileBase64,
-          transactionId: transactionId,
-          amount: amount,
-          currency: currencyCode
-        });
-
-        const validityDays = result.validityDays || 1;
-        const totalUses = result.totalUses || 1;
-        
-        const subscription: Subscription = {
-          planAmount: amount,
-          activatedAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + (validityDays * 24 * 60 * 60 * 1000)).toISOString(),
-          remainingUses: totalUses,
-          totalUses: totalUses
-        };
-        
-        setIsSyncing(false);
-        resetForm(); // Clear the form on success
-        onVerified(subscription);
-      } else {
-        setError(result.message || t('verify_failed'));
-      }
-    } catch (err) {
-      setError(t('verify_failed'));
-    } finally {
-      setIsVerifying(false);
+      }, 600);
+    } else {
+      setError("Invalid Access Key. Please try again.");
+      setShowKeySuccess(false);
     }
   };
 
   if (isUnlocked) {
     return (
-      <div className="p-8 bg-blue-600/10 border-2 border-blue-500/30 rounded-[2.5rem] flex flex-col items-center gap-6 text-blue-400 shadow-2xl animate-in zoom-in-95 duration-500">
-        <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl shadow-lg flex-shrink-0 animate-bounce">
+      <div className="p-10 bg-blue-600/10 border-2 border-blue-500/40 rounded-[3rem] flex flex-col items-center gap-6 text-blue-400 shadow-[0_0_50px_rgba(37,99,235,0.2)] animate-fade-in relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent"></div>
+        <div className="w-24 h-24 rounded-full bg-blue-600 flex items-center justify-center text-white text-5xl shadow-3xl animate-bounce relative z-10 border-4 border-blue-400/50">
           <i className="fa-solid fa-check"></i>
         </div>
-        <div className="text-center">
-          <p className="text-2xl font-black text-blue-100 tracking-tight">{t('access_unlocked')}</p>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60 mt-2">Plan Activated Successfully</p>
+        <div className="text-center relative z-10">
+          <p className="text-4xl font-black text-white tracking-tight mb-2">Verified & Unlocked</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.5em] text-blue-500">Download Buttons Visible Below</p>
         </div>
       </div>
     );
   }
 
-  const paymentLink = `upi://pay?pa=${UPI_ID}&pn=${encodeURIComponent(RECIPIENT_NAME)}&am=${amount}&cu=${currencyCode}&tn=Orgeta%20Passport%20Photo`;
-
   return (
-    <div className={`space-y-8 bg-blue-950/40 backdrop-blur-xl p-6 md:p-10 rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${isExpired ? 'opacity-75 border-rose-500/30' : 'border-blue-500/30 shadow-2xl'}`}>
+    <div className={`space-y-8 bg-blue-950/40 backdrop-blur-xl p-6 md:p-10 rounded-[2.5rem] border transition-all duration-500 overflow-hidden relative ${isExpired ? 'opacity-75 border-rose-500/30' : 'border-blue-500/20 shadow-2xl animate-fade-in'}`}>
       <div className="flex justify-center mb-2">
         <div className={`px-6 py-2 rounded-full border flex items-center gap-3 transition-colors ${timeLeft < 30 ? 'bg-rose-500/20 border-rose-500/40 text-rose-400 animate-pulse' : 'bg-blue-600/10 border-blue-500/20 text-blue-400'}`}>
           <i className="fa-solid fa-clock-rotate-left"></i>
-          <span className="text-sm font-black tracking-widest uppercase">Session Expires: {formatTime(timeLeft)}</span>
+          <span className="text-sm font-black tracking-widest uppercase">Expires: {formatTime(timeLeft)}</span>
         </div>
       </div>
 
       <div className="text-center space-y-3">
-        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-2 transition-colors ${isExpired ? 'bg-rose-500/20 text-rose-400' : 'bg-blue-600/20 text-blue-400'}`}>
-           <i className={`fa-solid ${isExpired ? 'fa-circle-exclamation' : 'fa-shield-halved'} text-2xl`}></i>
-        </div>
-        <h2 className="text-4xl font-black text-blue-100 tracking-tight">
-          {isExpired ? 'Session Expired' : t('pay_securely')}
-        </h2>
-        <p className="text-blue-400/60 text-sm font-black uppercase leading-relaxed max-w-sm mx-auto tracking-tighter">
-          {isExpired 
-            ? 'The payment session has timed out. Please go back and select your plan again to restart the process.' 
-            : `Pay ${currencySymbol}${amount} to ${RECIPIENT_NAME} first. Then upload your screenshot to activate your plan.`}
-        </p>
+        <h2 className="text-4xl font-black text-blue-100 tracking-tight">{isExpired ? 'Session Expired' : t('pay_securely')}</h2>
+        <p className="text-blue-400/60 text-sm font-black uppercase tracking-tighter">{isExpired ? 'Please restart.' : `Complete payment of ${currencySymbol}${amount} or use Access Key`}</p>
       </div>
 
       {!isExpired && (
-        <>
-          <div className="flex flex-col items-center gap-6 bg-blue-900/10 p-8 rounded-[2.5rem] border border-blue-500/10 relative group">
-            <div className="w-full max-w-sm">
-              <a 
-                href={paymentLink}
-                className="group/pay relative w-full py-6 rounded-2xl bg-gradient-to-r from-blue-600 to-blue-800 flex flex-col items-center justify-center gap-2 shadow-xl hover:scale-[1.02] active:scale-95 transition-all duration-300 overflow-hidden border border-blue-400/20"
-              >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/pay:opacity-100 transition-opacity"></div>
-                <div className="flex items-center gap-3">
-                  <i className="fa-solid fa-bolt-lightning text-white text-xl"></i>
-                  <span className="text-2xl font-black text-white uppercase tracking-tighter">
-                    {currencyCode === 'INR' ? 'UPI PAY' : 'DIRECT PAY'}
-                  </span>
-                </div>
-                <span className="text-[10px] font-black uppercase text-blue-100/60">Pay {currencySymbol}${amount} First</span>
-              </a>
-            </div>
-
-            <div className="w-full max-w-sm space-y-2">
-              <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest ml-2">Transaction ID / UTR (Mandatory)</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-4 flex items-center text-blue-500/50 pointer-events-none group-focus-within:text-blue-400">
-                  <i className="fa-solid fa-receipt"></i>
-                </div>
-                <input 
-                  type="text" 
-                  value={transactionId}
-                  onChange={(e) => setTransactionId(e.target.value)}
-                  placeholder="Enter 12-digit UTR or Transaction ID"
-                  className="w-full bg-blue-950/60 border border-blue-500/20 rounded-2xl py-4 pl-12 pr-4 text-blue-50 font-black placeholder:text-blue-800/40 focus:outline-none focus:border-blue-500 transition-all shadow-inner uppercase text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="w-full max-w-sm">
+        <div className="flex flex-col gap-10">
+          <div className="flex flex-col items-center gap-6 bg-blue-900/10 p-8 rounded-[2.5rem] border border-blue-500/10 relative">
+            <div className="w-full max-w-sm space-y-4">
+              <input 
+                type="text" value={transactionId} onChange={(e) => setTransactionId(e.target.value)}
+                placeholder="Enter Transaction ID (UTR)"
+                className="w-full bg-blue-950/60 border border-blue-500/20 rounded-2xl py-4 px-6 text-white font-bold uppercase text-xs focus:border-blue-500 transition-colors outline-none"
+              />
               <label className="block w-full cursor-pointer group relative">
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
-                  className="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer"
-                />
-                <div className={`w-full py-6 flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed transition-all ${selectedFile ? 'bg-blue-600/10 border-blue-400 text-blue-400' : 'bg-blue-900/10 border-blue-500/20 text-blue-500/50'}`}>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                <div className={`w-full py-6 flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed transition-all ${selectedFile ? 'bg-blue-600/10 border-blue-400 text-blue-400' : 'bg-blue-900/10 border-blue-500/20 text-blue-500/50 hover:border-blue-500/40'}`}>
                   <i className={`fa-solid ${selectedFile ? 'fa-file-circle-check' : 'fa-camera-retro'} text-xl`}></i>
-                  <span className="text-xs font-black uppercase tracking-widest">
-                    {selectedFile ? selectedFile.name.substring(0, 20) + '...' : t('upload_receipt')}
-                  </span>
+                  <span className="text-xs font-black uppercase tracking-widest">{selectedFile ? selectedFile.name.substring(0, 15) + '...' : t('upload_receipt')}</span>
                 </div>
               </label>
             </div>
-
             <button 
-              onClick={handleVerify}
+              onClick={async () => {
+                if (!fileBase64 || !transactionId) return;
+                setIsVerifying(true);
+                setError(null);
+                try {
+                  const result = await verifyPaymentScreenshot(fileBase64, transactionId);
+                  if (result.status === VerificationStatus.SUCCESS) {
+                    setIsSyncing(true);
+                    logTransactionToLedger(result.amount || amount, transactionId, currencyCode);
+                    await sendPaymentNotification({
+                      type: 'PAYMENT_VERIFIED',
+                      amount: result.amount || amount, currency: currencyCode,
+                      txId: transactionId, timestamp: new Date().toISOString()
+                    });
+                    const newSubscription: Subscription = {
+                      planAmount: result.amount || amount,
+                      activatedAt: new Date().toISOString(),
+                      expiresAt: new Date(Date.now() + (result.validityDays || 1) * 24 * 60 * 60 * 1000).toISOString(),
+                      remainingUses: result.totalUses || 1,
+                      totalUses: result.totalUses || 1
+                    };
+                    onVerified(newSubscription);
+                    resetForm();
+                  } else {
+                    setError(result.message || "Verification failed.");
+                  }
+                } catch (err) {
+                  setError("Verification error.");
+                } finally {
+                  setIsVerifying(false);
+                  setIsSyncing(false);
+                }
+              }} 
               disabled={isVerifying || !transactionId || !selectedFile}
-              className={`w-full max-w-sm py-5 rounded-2xl font-black text-lg transition-all flex items-center justify-center gap-3 ${
-                isVerifying || !transactionId || !selectedFile 
-                ? 'bg-blue-900/40 text-blue-800 cursor-not-allowed border border-blue-500/10' 
-                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-600/30 animate-in zoom-in-95 border border-blue-400/20'
-              }`}
+              className={`w-full max-w-sm py-5 rounded-2xl font-black text-lg transition-all ${isVerifying || !transactionId || !selectedFile ? 'bg-blue-900/40 text-blue-800' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-3xl'}`}
             >
-              {isVerifying ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-                  <span>{isSyncing ? 'SYNCING DATA...' : 'VERIFYING...'}</span>
-                </>
-              ) : (
-                <>
-                  <i className="fa-solid fa-shield-check"></i>
-                  <span>VERIFY PAYMENT</span>
-                </>
-              )}
+              {isVerifying ? 'VERIFYING...' : 'VERIFY PAYMENT'}
             </button>
           </div>
           
-          {error && (
-            <div className="max-w-sm mx-auto p-4 bg-rose-500/10 border border-rose-500/20 rounded-2xl text-center">
-              <p className="text-xs font-bold text-rose-500 uppercase tracking-widest leading-relaxed">
-                <i className="fa-solid fa-triangle-exclamation mr-2"></i>
-                {error}
-              </p>
-            </div>
-          )}
-
-          <div className="max-w-sm mx-auto pt-6 border-t border-blue-500/10 space-y-4">
+          <div className="max-w-sm mx-auto pt-8 border-t border-blue-500/10 w-full space-y-4">
              <div className="text-center">
-               <span className="text-[9px] font-black text-blue-500/40 uppercase tracking-[0.3em]">Access Key Management</span>
+               <span className="text-[10px] font-black text-blue-500/60 uppercase tracking-[0.5em]">Direct Studio Access Key</span>
              </div>
-             <div className="relative group">
-                <div className={`absolute inset-y-0 left-4 flex items-center transition-colors ${showKeySuccess ? 'text-blue-400' : 'text-blue-500/20 group-focus-within:text-blue-400'}`}>
-                  <i className={`fa-solid ${showKeySuccess ? 'fa-circle-check' : 'fa-shield-keyhole'}`}></i>
+             <div className="flex gap-3">
+                <div className="relative flex-grow">
+                  <div className={`absolute inset-y-0 left-5 flex items-center transition-all ${showKeySuccess ? 'text-blue-500 scale-125' : 'text-blue-500/30'}`}>
+                    <i className={`fa-solid ${showKeySuccess ? 'fa-circle-check' : 'fa-shield-keyhole'} text-xl`}></i>
+                  </div>
+                  <input 
+                    type="text" value={accessKey} onChange={(e) => setAccessKey(e.target.value)}
+                    placeholder="RED@10"
+                    className={`w-full bg-blue-900/20 border-2 rounded-[1.5rem] py-5 pl-14 pr-6 text-sm font-black uppercase tracking-[0.2em] transition-all outline-none ${showKeySuccess ? 'border-blue-500 bg-blue-600/10 text-blue-400 ring-4 ring-blue-500/20' : 'border-blue-500/10 text-white focus:border-blue-500/40'}`}
+                  />
                 </div>
-                <input 
-                  type="text" 
-                  value={accessKey}
-                  onChange={(e) => handleAccessKeyCheck(e.target.value)}
-                  placeholder="Enter Access Key..."
-                  className={`w-full bg-blue-900/10 border rounded-xl py-4 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none transition-all ${
-                    showKeySuccess 
-                    ? 'border-blue-500/50 text-blue-400 bg-blue-500/5' 
-                    : 'border-blue-500/10 text-blue-50 placeholder:text-blue-900/30 focus:border-blue-500/40'
-                  }`}
-                />
+                <button 
+                  onClick={handleManualUnlock}
+                  disabled={!accessKey.trim()}
+                  className={`px-8 rounded-[1.5rem] font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 group ${accessKey.trim() ? 'bg-blue-600 text-white shadow-xl shadow-blue-600/30 active:scale-95' : 'bg-blue-900/40 text-blue-800 cursor-not-allowed'}`}
+                >
+                  <i className="fa-solid fa-key group-hover:rotate-12 transition-transform"></i>
+                  <span>Unlock</span>
+                </button>
              </div>
+             {error && (
+                <p className="text-center text-[10px] font-black text-rose-500 uppercase tracking-widest animate-fade-in"><i className="fa-solid fa-circle-xmark mr-2"></i>{error}</p>
+              )}
           </div>
-        </>
-      )}
-
-      {isExpired && (
-        <div className="flex flex-col items-center gap-6 py-10">
-           <button 
-            onClick={() => window.location.reload()}
-            className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-blue-500 transition-all uppercase tracking-widest border border-blue-400/20"
-           >
-             Restart Process
-           </button>
         </div>
       )}
-
-      <p className="text-center text-[10px] text-blue-500/40 font-black uppercase tracking-[0.4em]">{t('secure_checkout')}</p>
+      {isExpired && (
+        <div className="flex justify-center py-10">
+           <button onClick={() => window.location.reload()} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg uppercase tracking-widest">Restart</button>
+        </div>
+      )}
+      <p className="text-center text-[10px] text-blue-500/30 font-black uppercase tracking-[0.5em]">{t('secure_checkout')}</p>
     </div>
   );
 };

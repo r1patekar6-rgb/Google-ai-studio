@@ -1,15 +1,6 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { VerificationStatus, VerificationResult } from '../types';
 import { REPORT_EMAIL, INR_PRICING, USD_PRICING, INR_BULK_PLANS, USD_BULK_PLANS, RECIPIENT_NAME, UPI_ID } from '../constants';
-
-/**
- * Helper to get Gemini client with the latest API key from environment
- */
-const getAIClient = () => {
-  const apiKey = (window as any).process?.env?.API_KEY || '';
-  return new GoogleGenAI({ apiKey });
-};
 
 /**
  * Robust JSON extraction from LLM response
@@ -34,7 +25,8 @@ const cleanJsonResponse = (text: string) => {
  */
 export const verifyPaymentScreenshot = async (base64Image: string, userProvidedTxId: string): Promise<VerificationResult> => {
   try {
-    const ai = getAIClient();
+    // Fix: Using process.env.API_KEY directly as per guidelines
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const today = new Date();
     const formattedDate = today.toLocaleDateString('en-IN', {
       day: 'numeric',
@@ -89,6 +81,7 @@ export const verifyPaymentScreenshot = async (base64Image: string, userProvidedT
       }
     });
 
+    // Fix: Access response.text property directly
     const result = cleanJsonResponse(response.text || '{}');
 
     if (result.status === 'SUCCESS' && result.recipientMatched && result.upiMatched && result.isDateCurrent && result.amountIsPremium) {
@@ -125,7 +118,8 @@ export const editUserPhoto = async (
   itemDescription?: string,
   settings?: { sharpness: number; brightness: number; contrast: number }
 ): Promise<string> => {
-  const ai = getAIClient();
+  // Fix: Using process.env.API_KEY directly as per guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const mimeType = base64Image.split(';')[0].split(':')[1];
   const data = base64Image.split(',')[1];
 
@@ -133,21 +127,23 @@ export const editUserPhoto = async (
   if (action === 'enhance') {
     prompt = `Professional portrait enhancement for official document:
     1. Adjust Sharpness to ${settings?.sharpness || 50}%, Brightness to ${settings?.brightness || 50}%, and Contrast to ${settings?.contrast || 50}%.
-    2. Reduce digital noise and artifacts.
-    3. Preserve natural skin details.
-    4. Sharpen eyes and facial features.`;
+    2. Ensure the subject and background fill the entire output frame. Do not leave any empty or black bars.
+    3. Reduce digital noise and artifacts.
+    4. Preserve natural skin details and sharpen eyes.`;
   } else if (action === 'remove_bg') {
-    prompt = "Precisely isolate the person from the current background. Replace the background with a solid, pure white (#FFFFFF) background suitable for a passport photo.";
+    prompt = "Precisely isolate the person from the current background. Replace the entire background with a solid, pure white (#FFFFFF) background. The new white background MUST fill the entire frame from edge to edge with NO black bars or padding.";
   } else if (action === 'apply_clothes') {
     prompt = `Elite professional digital tailoring:
     1. Replace the person's outfit with ${itemDescription}. 
     2. Ensure perfect alignment with neck and shoulders.
-    3. Match lighting and shadows for 100% realism.`;
+    3. The final subject and their background MUST fill the entire rectangular frame completely. No black padding at edges.
+    4. Match lighting and shadows for 100% realism.`;
   } else if (action === 'change_bg_color') {
     prompt = `Professional studio background modification:
     1. Remove existing background.
-    2. Replace with solid ${itemDescription} color.
-    3. Precise edge detection around hair.`;
+    2. Replace with a solid ${itemDescription} color.
+    3. The new solid color background MUST fill the entire frame perfectly with no black spaces, bars, or padding at any edge.
+    4. Ensure precise edge detection around hair.`;
   }
 
   const response = await ai.models.generateContent({
@@ -160,6 +156,7 @@ export const editUserPhoto = async (
     }
   });
 
+  // Access parts and inlineData to find generated image
   const contentParts = response.candidates?.[0]?.content?.parts || [];
   for (const part of contentParts) {
     if (part.inlineData) {

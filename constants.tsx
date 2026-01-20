@@ -8,23 +8,72 @@ export const INDIAN_LANGUAGES = [
 ];
 
 export const INR_PRICING = [
-  { amount: 37, photos: 21, label: 'Standard', validityDays: 1, uses: 1, description: 'Single document grid. Perfect for basics.' },
-  { amount: 47, photos: 30, label: 'Value', validityDays: 1, uses: 1, description: 'Optimized density. Best for family sets.' },
-  { amount: 49, photos: 37, label: 'Premium', validityDays: 1, uses: 1, description: 'Ultra-HD output. Official use recommended.' },
-  { amount: 60, photos: 45, label: 'Premium 1+', validityDays: 1, uses: 1, description: 'Maximum sheet capacity for bulk printing.' }
+  { 
+    amount: 37, 
+    photos: 21, 
+    label: 'Standard', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Professional 300 DPI grid for single documents. Perfect for basic ID needs with high-density layout.' 
+  },
+  { 
+    amount: 47, 
+    photos: 30, 
+    label: 'Value', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Maximum density pack. Best for families or multiple document types. Optimized for A4 printing.' 
+  },
+  { 
+    amount: 49, 
+    photos: 37, 
+    label: 'Premium', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Elite Studio Quality. Features facial detail enhancement and official government-grade verification.' 
+  },
+  { 
+    amount: 60, 
+    photos: 45, 
+    label: 'Premium 1+', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Full-sheet capacity. Highest possible photo count per page. Best for heavy-duty studio printing.' 
+  }
 ];
 
 export const USD_PRICING = [
-  { amount: 5, photos: 21, label: 'Standard', validityDays: 1, uses: 1, description: 'Single sheet layout. High resolution.' },
-  { amount: 10, photos: 30, label: 'Value', validityDays: 1, uses: 1, description: 'Multi-document set. Best for visa apps.' },
-  { amount: 15, photos: 37, label: 'Premium', validityDays: 1, uses: 1, description: 'Priority processing & HD quality.' }
+  { 
+    amount: 5, 
+    photos: 21, 
+    label: 'Standard', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Digital-ready high resolution grid. Standard layout for passports and international IDs.' 
+  },
+  { 
+    amount: 10, 
+    photos: 30, 
+    label: 'Value', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Bundle pack for multi-document applications. Ideal for comprehensive Visa sets and family IDs.' 
+  },
+  { 
+    amount: 15, 
+    photos: 37, 
+    label: 'Premium', 
+    validityDays: 1, 
+    uses: 1, 
+    description: 'Top-tier Studio quality with priority AI processing and maximum resolution for pro-lab prints.' 
+  }
 ];
 
 export const INR_BULK_PLANS = [
   { 
     amount: 340, 
     label: 'Premium 1++', 
-    description: '10 Uses of ₹37 Plan. Save ₹30 instantly.', 
+    description: 'Unlock 10 High-Quality Sessions. Save ₹30 instantly compared to single purchases.', 
     originalPrice: 370, 
     validity: '12 Months',
     validityDays: 365,
@@ -34,7 +83,7 @@ export const INR_BULK_PLANS = [
   { 
     amount: 430, 
     label: 'Premium 2++', 
-    description: '10 Uses of ₹47 Plan. For regular users.', 
+    description: 'Our most popular Value Pack. Get 10 full-sheet sessions. Ideal for small businesses.', 
     originalPrice: 470, 
     validity: '12 Months',
     validityDays: 365,
@@ -44,7 +93,7 @@ export const INR_BULK_PLANS = [
   { 
     amount: 410, 
     label: 'Premium 3++', 
-    description: '10 Uses of ₹49 Plan. Professional choice.', 
+    description: '10 Elite Ultra-HD Sessions. For users who demand professional studio-grade results every time.', 
     originalPrice: 490, 
     validity: '12 Months',
     validityDays: 365,
@@ -54,7 +103,7 @@ export const INR_BULK_PLANS = [
   { 
     amount: 1000, 
     label: 'Gold Premium', 
-    description: '30 Uses of ₹37 Plan. 1 Year valid.', 
+    description: 'Bulk Enterprise Tier. 30 High-Resolution sessions. Massive savings for frequent power users.', 
     originalPrice: 1110, 
     validity: '12 Months',
     validityDays: 365,
@@ -68,7 +117,7 @@ export const USD_BULK_PLANS = [
   { 
     amount: 50, 
     label: 'Premium 1++', 
-    description: '11 Uses of $5 Plan. Save $5.', 
+    description: 'Buy 10 sessions, get 1 FREE. Total 11 Standard HD sessions. No expiry for 1 year.', 
     originalPrice: 55, 
     validity: '12 Months',
     validityDays: 365,
@@ -78,7 +127,7 @@ export const USD_BULK_PLANS = [
   { 
     amount: 100, 
     label: 'Premium 2++', 
-    description: '12 Uses of $10 Plan. Pro studio pack.', 
+    description: 'Ultimate Value Bundle. 12 High-density sessions. Perfect for international families.', 
     originalPrice: 120, 
     validity: '12 Months',
     validityDays: 365,
@@ -88,7 +137,7 @@ export const USD_BULK_PLANS = [
   { 
     amount: 150, 
     label: 'Premium 3++', 
-    description: '13 Uses of $15 Plan. Max value.', 
+    description: 'Elite Pro Pack. 13 Maximum resolution sessions. Priority access to the AI editing engine.', 
     originalPrice: 195, 
     validity: '12 Months',
     validityDays: 365,
@@ -98,34 +147,12 @@ export const USD_BULK_PLANS = [
   { 
     amount: 200, 
     label: 'Gold Premium 1++', 
-    description: '41 Uses of $5 Plan. 1 Year valid.', 
+    description: 'Bulk Power User. 41 Standard sessions. Save $5 instantly with year-long validity.', 
     originalPrice: 205, 
     validity: '12 Months',
     validityDays: 365,
     uses: 41,
     icon: 'fa-gem',
-    isGold: true
-  },
-  { 
-    amount: 400, 
-    label: 'Gold Premium 2++', 
-    description: '42 Uses of $10 Plan. Professional set.', 
-    originalPrice: 420, 
-    validity: '12 Months',
-    validityDays: 365,
-    uses: 42,
-    icon: 'fa-shield-halved',
-    isGold: true
-  },
-  { 
-    amount: 600, 
-    label: 'Gold Premium 3++', 
-    description: '45 Uses of $15 Plan. 1 Year valid.', 
-    originalPrice: 675, 
-    validity: '12 Months',
-    validityDays: 365,
-    uses: 45,
-    icon: 'fa-bolt-lightning',
     isGold: true
   }
 ];
